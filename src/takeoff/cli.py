@@ -17,7 +17,7 @@ import os
 
 import typer
 
-from . import db, evaluate as ev, extract, groundtruth, overlay as ov, pipeline, profile as prof
+from . import db, evaluate as ev, extract, groundtruth, layergrammar as lg, overlay as ov, pipeline, profile as prof
 from . import styles as st
 from . import zones as zn
 
@@ -119,6 +119,42 @@ def import_facit(xlsx: str, drawing: str = "") -> None:
         con.close()
     print(f"\nimporterade {n} facitrader for {gt.drawing!r}")
     print(json.dumps(gt.totals(), indent=2, ensure_ascii=False))
+
+
+@app.command()
+def calibrate(pdf: str, marked: str = "", save: bool = True) -> None:
+    """Harled projektets lagerregel ur en handmatt ritning (R2).
+
+    Kraver den uppmarkta PDF:en, dar facitets markeringar ligger kvar. Regeln
+    sparas per PROJEKT och plockas darefter upp automatiskt av ovriga
+    ritningar i samma projekt - aldrig av ett annat projekt.
+    """
+    drawing = _drawing_name(pdf)
+    _, auto_marked = _facit_for(drawing)
+    marked = marked or auto_marked or ""
+    if not marked:
+        raise typer.BadParameter("hittade ingen uppmarkt PDF med facitgeometri")
+    result = pipeline.run(pdf, layer_rule=False or None)
+    geom = groundtruth.load_markup_geometry(marked)
+    rule = lg.calibrate(result, geom)
+    print(json.dumps(rule.as_dict(), indent=2, ensure_ascii=False))
+    if not rule.valid:
+        print("\nKALIBRERINGEN MISSLYCKADES - ingen regel sparas.")
+        print(f"  {rule.reason}")
+        raise typer.Exit(code=1)
+    from . import scale as sc_mod
+
+    ref = sc_mod.reference_from(result.scale, rule.project_key or "", result.drawing)
+    if ref is None:
+        print("\nVARNING: skalan var inte verifierad pa denna ritning - ingen")
+        print("skalreferens sparas. Ovriga ritningar i projektet far da bara")
+        print("skalstockens kandidatlista och kan komma att vagra mata.")
+    else:
+        print("\nskalreferens: skalstock " + json.dumps(ref.as_dict(), ensure_ascii=False))
+    if save:
+        path = lg.save_project(rule, ref)
+        print(f"\nskrev {path}")
+        print(f"galler for projektet {rule.project_key!r}")
 
 
 @app.command()

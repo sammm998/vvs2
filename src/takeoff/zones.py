@@ -14,6 +14,7 @@ Metod:
 from __future__ import annotations
 
 import collections
+import math
 from dataclasses import dataclass, field
 
 from .extract import Sheet
@@ -235,3 +236,68 @@ def _largest_free_rect(frame: Box, panels: list[Box], nx: int = 240, ny: int = 1
         return frame
     _, i0, j0, i1, j1 = best
     return (fx0 + i0 * cw, fy0 + j0 * ch, fx0 + (i1 + 1) * cw, fy0 + (j1 + 1) * ch)
+
+
+# --------------------------------------------------------------------------
+# Maskade zoner (fas 4)
+
+
+class HatchMask:
+    """Schrafferad zon: omrade som ritningen sjalv markerar som undantaget.
+
+    Schraffering over ett planomrade betyder normalt att omradet ligger
+    utanfor det som ritningen redovisar - annan entreprenad, annan etapp,
+    eller en angransande ritning. Ledningar ritas ofta igenom zonen for att
+    visa anslutningen, men de ingar inte i mangden.
+
+    Zonen harleds ur ritningens egen geometri: ett kluster av langa,
+    parallella, osammanhangande linjer. Inga fasta koordinater (CLAUDE.md,
+    avsnitt Forbjudet).
+
+    Langden i zonen tas ALDRIG bort tyst - den redovisas som egen rad (R10).
+    """
+
+    def __init__(self, cells: set[tuple[int, int]], cell: float, clusters: list[str]):
+        self.cells = cells
+        self.cell = cell
+        self.clusters = clusters
+
+    def __bool__(self) -> bool:
+        return bool(self.cells)
+
+    def contains(self, point) -> bool:
+        if not self.cells:
+            return False
+        return (int(point[0] // self.cell), int(point[1] // self.cell)) in self.cells
+
+    def as_dict(self) -> dict:
+        return {"cells": len(self.cells), "cell_pt": round(self.cell, 2), "clusters": self.clusters}
+
+
+def hatch_mask(sheet, style_index, selection, zonemap, cell_factor: float = 6.0) -> HatchMask:
+    from .styles import angular_concentration
+
+    pipe_ids = set(selection.pipe_clusters)
+    by_id = {p.id: p for p in sheet.paths}
+    cell = max(sheet.median_width() * cell_factor, 1e-6)
+    chosen: list[str] = []
+    cells: set[tuple[int, int]] = set()
+    for c in style_index.clusters:
+        if c.id in pipe_ids or c.n_paths < 20 or c.total_length <= 0:
+            continue
+        # Schraffering: enriktad, langa banor, och banorna mots inte - de ar
+        # parallella streck, inte ett nat.
+        if angular_concentration(c) <= 0.8 or c.connectivity >= 0.10:
+            continue
+        if zonemap.classify(c.bbox) != "plan":
+            continue
+        chosen.append(c.id)
+        for pid in c.path_ids:
+            for a, b in by_id[pid].segments:
+                n = max(1, int(math.dist(a, b) / cell))
+                for k in range(n + 1):
+                    t = k / n
+                    px = a[0] + (b[0] - a[0]) * t
+                    py = a[1] + (b[1] - a[1]) * t
+                    cells.add((int(px // cell), int(py // cell)))
+    return HatchMask(cells, cell, chosen)

@@ -53,6 +53,19 @@ class PageTransform:
         ys = [p[1] for p in corners]
         return pymupdf.Rect(min(xs), min(ys), max(xs), max(ys))
 
+    def invert(self, p: Point | pymupdf.Point) -> Point:
+        """Normrymd -> raa PDF-anvandarkoordinater.
+
+        Behovs bara nar nagot ska ritas TILLBAKA in i kalldokumentet, som i
+        overlay.py. All matning sker i normrymden.
+        """
+        x, y = (p.x, p.y) if isinstance(p, pymupdf.Point) else (p[0], p[1])
+        det = self.a * self.d - self.b * self.c
+        if abs(det) < 1e-12:  # pragma: no cover
+            raise ValueError("singular transform")
+        dx, dy = x - self.e, y - self.f
+        return ((self.d * dx - self.c * dy) / det, (-self.b * dx + self.a * dy) / det)
+
     @property
     def diagonal(self) -> float:
         """Sidans diagonal. Referenslangd for relativa trosklar (R1)."""

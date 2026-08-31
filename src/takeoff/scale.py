@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import collections
 import math
+import re
 import statistics
 from dataclasses import dataclass, field
 
@@ -77,6 +78,74 @@ def _candidate_scales(pitch_pt: float, unit_hypotheses: tuple[float, ...]) -> di
 
 
 @dataclass
+class ScaleReference:
+    """Skalstockens verkliga spann, faststallt pa en kalibrerad ritning.
+
+    En skalstock ar en KAND GEOMETRISK LANGD sa snart man vet hur manga meter
+    den spanner. Det gar inte att lasa ur en vektoriserad etikett, men det gar
+    att faststalla pa en ritning dar modulnatet finns som riktig text - och
+    darefter ateranvandas pa ovriga ritningar i SAMMA projekt (R2), sa lange
+    stocken ar densamma.
+
+    Referensen ar falsifierbar: skiljer sig stapelns langd eller delning fran
+    den kalibrerade galler den inte, och skalan far inte faststallas ur den.
+    """
+
+    project_key: str
+    pitch_pt: float
+    divisions: int
+    span_mm: float
+    calibrated_on: str = ""
+
+    def matches(self, source: "ScaleSource | None") -> bool:
+        if source is None or source.name != "scalebar":
+            return False
+        if self.pitch_pt <= 0:
+            return False
+        if abs(source.pitch_pt - self.pitch_pt) / self.pitch_pt > 0.005:
+            return False
+        return int(source.detail.get("divisions") or 0) == self.divisions
+
+    def as_dict(self) -> dict:
+        return {
+            "project_key": self.project_key,
+            "pitch_pt": round(self.pitch_pt, 4),
+            "divisions": self.divisions,
+            "span_mm": self.span_mm,
+            "calibrated_on": self.calibrated_on,
+        }
+
+    @staticmethod
+    def from_dict(d: dict | None) -> "ScaleReference | None":
+        if not d:
+            return None
+        return ScaleReference(
+            project_key=d.get("project_key") or "",
+            pitch_pt=float(d.get("pitch_pt") or 0.0),
+            divisions=int(d.get("divisions") or 0),
+            span_mm=float(d.get("span_mm") or 0.0),
+            calibrated_on=d.get("calibrated_on") or "",
+        )
+
+
+def reference_from(result_scale: "ScaleResult", project_key: str, drawing: str) -> ScaleReference | None:
+    """Harled projektreferensen ur en ritning med verifierad skala."""
+    if not result_scale.verified or not result_scale.value:
+        return None
+    sb = next((s for s in result_scale.sources if s.name == "scalebar"), None)
+    if sb is None:
+        return None
+    span_mm = sb.pitch_pt * MM_PER_PT * result_scale.value
+    return ScaleReference(
+        project_key=project_key,
+        pitch_pt=sb.pitch_pt,
+        divisions=int(sb.detail.get("divisions") or 0),
+        span_mm=round(span_mm, 1),
+        calibrated_on=drawing,
+    )
+
+
+@dataclass
 class ScaleResult:
     value: float | None
     verified: bool
@@ -116,36 +185,47 @@ class ScaleResult:
 # Kalla 1: modulnat
 
 
-def _numeric(t: str) -> float | None:
-    s = t.strip().replace(",", ".")
-    if not s or not any(ch.isdigit() for ch in s):
+_GRID_LABEL = re.compile(r"^([^\W\d_]*)[\s-]?(\d+(?:[.,]\d+)?)$", re.UNICODE)
+
+
+def _numeric(t: str) -> tuple[str, float] | None:
+    """Modulnatets etikett som (prefix, varde).
+
+    Natbubblor heter inte alltid bara "70" - de heter lika ofta "A200" eller
+    "B12". Prefixet bevaras sa att bara etiketter ur SAMMA natserie jamfors;
+    att blanda A-serien med sifferserien vore att mata mellan tva olika nat.
+
+    Etiketter med mer an en siffergrupp ("2024-04-19") ar inte natbubblor och
+    forkastas.
+    """
+    s = t.strip()
+    m = _GRID_LABEL.match(s)
+    if not m:
         return None
-    try:
-        return float(s)
-    except ValueError:
-        return None
+    return (m.group(1).upper(), float(m.group(2).replace(",", ".")))
 
 
 def grid_source(sheet: Sheet) -> ScaleSource | None:
     pts = []
     for t in sheet.texts:
-        v = _numeric(t.text)
-        if v is None:
+        parsed = _numeric(t.text)
+        if parsed is None:
             continue
+        prefix, v = parsed
         x0, y0, x1, y1 = t.bbox
-        pts.append((v, (x0 + x1) / 2, (y0 + y1) / 2, y1 - y0))
+        pts.append((prefix, v, (x0 + x1) / 2, (y0 + y1) / 2, y1 - y0))
     if len(pts) < 3:
         return None
-    heights = [p[3] for p in pts] or [1.0]
+    heights = [p[4] for p in pts] or [1.0]
     tol = statistics.median(heights)
 
     best = None
     for axis in (0, 1):  # 0 = rad (gemensam y), 1 = kolumn (gemensam x)
-        buckets: dict[int, list] = collections.defaultdict(list)
-        for v, cx, cy, h in pts:
+        buckets: dict[tuple[str, int], list] = collections.defaultdict(list)
+        for prefix, v, cx, cy, h in pts:
             along, across = (cx, cy) if axis == 0 else (cy, cx)
-            buckets[int(across / max(tol, 1e-6))].append((v, along))
-        for group in buckets.values():
+            buckets[(prefix, int(across / max(tol, 1e-6)))].append((v, along))
+        for (prefix, _), group in buckets.items():
             if len(group) < 3:
                 continue
             group.sort(key=lambda g: g[1])
@@ -155,12 +235,15 @@ def grid_source(sheet: Sheet) -> ScaleSource | None:
             for i in range(len(group) - 1):
                 dv = vals[i + 1] - vals[i]
                 dp = pos[i + 1] - pos[i]
-                if dv <= 0 or dp <= 0:
+                # Natet far numreras at bada hallen; det som kravs ar att
+                # riktningen ar densamma hela raden.
+                if dv == 0 or dp <= 0:
                     ratios = []
                     break
                 ratios.append(dp / dv)
-            if len(ratios) < 2:
+            if len(ratios) < 2 or not (all(r > 0 for r in ratios) or all(r < 0 for r in ratios)):
                 continue
+            ratios = [abs(r) for r in ratios]
             mean = statistics.fmean(ratios)
             spread = (max(ratios) - min(ratios)) / mean if mean else 1.0
             if best is None or spread < best[0]:
@@ -359,7 +442,13 @@ def _snap(scale: float) -> float | None:
     return None
 
 
-def determine(sheet: Sheet, styles=None, plan=None, tolerance_pct: float = 0.5) -> ScaleResult:
+def determine(
+    sheet: Sheet,
+    styles=None,
+    plan=None,
+    tolerance_pct: float = 0.5,
+    reference: ScaleReference | None = None,
+) -> ScaleResult:
     sources: list[ScaleSource] = []
     flags: list[str] = []
 
@@ -374,6 +463,29 @@ def determine(sheet: Sheet, styles=None, plan=None, tolerance_pct: float = 0.5) 
         sources.append(sb)
     else:
         flags.append("scalebar:not_found")
+
+    # Fjarde kallan: samma skalstock som pa en kalibrerad ritning i projektet.
+    # Da ar stapelns verkliga spann kant, och stocken blir en fullvardig
+    # geometrisk kalla i stallet for en kandidatlista.
+    if reference is not None and reference.matches(sb):
+        raw = reference.span_mm * PT_PER_MM / sb.pitch_pt
+        snap = _snap(raw)
+        if snap is not None:
+            sources.append(
+                ScaleSource(
+                    "project_scalebar",
+                    sb.pitch_pt,
+                    {snap: raw},
+                    {
+                        "span_mm": reference.span_mm,
+                        "calibrated_on": reference.calibrated_on,
+                        "project_key": reference.project_key,
+                    },
+                )
+            )
+            flags.append(f"scale_reference:{reference.calibrated_on}")
+    elif reference is not None:
+        flags.append("scale_reference:scalebar_differs_from_project")
 
     usable = [s for s in sources if s.ok]
     for s in sources:
@@ -406,6 +518,10 @@ def determine(sheet: Sheet, styles=None, plan=None, tolerance_pct: float = 0.5) 
     elif styles is not None:
         flags.append("wall:not_found")
 
+    # R4: en tvetydig skala far ALDRIG loses genom att valja en av dem. Nar
+    # flera standardskalor overlever grindarna, eller nar bara en kalla
+    # stoder den, ar skalan inte faststalld - och da far ingenting matas.
+    ambiguous = len(surviving) > 1
     value = surviving[0]
     used = support[value]
     if wall_mode > 0:
@@ -423,13 +539,17 @@ def determine(sheet: Sheet, styles=None, plan=None, tolerance_pct: float = 0.5) 
 
     raw = [s.candidates[value] for s in used]
     error_pct = (max(raw) - min(raw)) / statistics.fmean(raw) * 100 if len(raw) > 1 else None
-    verified = len(used) >= 2 and len(surviving) == 1 and (error_pct or 0.0) <= tolerance_pct
+    verified = len(used) >= 2 and not ambiguous and (error_pct or 0.0) <= tolerance_pct
 
     if len(used) < 2:
         flags.append("single_source_only")
-    if len(surviving) > 1:
+    if ambiguous:
         flags.append("ambiguous:" + ",".join(f"1:{int(c)}" for c in surviving))
     if error_pct is not None and error_pct > tolerance_pct:
         flags.append(f"sources_disagree:{error_pct:.2f}pct")
 
+    if not verified:
+        # Ingen skala levereras. Att lamna ett varde har vore att gissa, och
+        # en gissad skala multiplicerar hela mangdforteckningen med fel tal.
+        return ScaleResult(None, False, sources, error_pct, flags, surviving)
     return ScaleResult(value, verified, sources, error_pct, flags, surviving)

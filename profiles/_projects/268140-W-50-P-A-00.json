@@ -1,0 +1,27 @@
+{
+  "project_key": "268140-W-50-P-A-00",
+  "layer_rule": {
+    "tokens": [
+      "-FE-"
+    ],
+    "valid": true,
+    "reason": "",
+    "project_key": "268140-W-50-P-A-00",
+    "calibrated_on": "W501A0011-single",
+    "positives": [
+      "268140-W-50-P-A-00|V-52BB-FE--V1-",
+      "268140-W-50-P-A-00|V-52BB-FE--V2-",
+      "268140-W-50-P-A-00|V-52BC-FE--V1-",
+      "268140-W-50-P-A-00|V-53BB-FE--S1-",
+      "268140-W-50-P-A-00|V-53BB-FE--S3-"
+    ],
+    "negatives_excluded": 33
+  },
+  "scale_reference": {
+    "project_key": "268140-W-50-P-A-00",
+    "pitch_pt": 283.5599,
+    "divisions": 10,
+    "span_mm": 5001.7,
+    "calibrated_on": "W501A0011-single"
+  }
+}

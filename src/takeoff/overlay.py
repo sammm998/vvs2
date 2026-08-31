@@ -35,6 +35,15 @@ def render(result, out_path: str, show_blocked: bool = True) -> str:
     doc = pymupdf.open(result.source)
     page = doc[result.sheet.page_number]
 
+    # R8: matningen ligger i normrymden. For att rita in den i kallsidan
+    # maste den tillbaka genom transformens invers - annars hamnar overlayen
+    # bredvid ritningen sa fort arket har /Rotate.
+    tf = result.sheet.transform
+
+    def P(pt) -> pymupdf.Point:
+        x, y = tf.invert(pt)
+        return pymupdf.Point(x, y)
+
     colors = {cid: PALETTE[i % len(PALETTE)] for i, cid in enumerate(result.selection.pipe_clusters)}
 
     # Sparrade banor som eget, slackbart lager.
@@ -50,7 +59,7 @@ def render(result, out_path: str, show_blocked: bool = True) -> str:
             if not p or p.length <= 0:
                 continue
             for a, c in p.segments:
-                shape.draw_line(pymupdf.Point(*a), pymupdf.Point(*c))
+                shape.draw_line(P(a), P(c))
             drawn += 1
             if drawn > 20000:
                 break
@@ -68,7 +77,7 @@ def render(result, out_path: str, show_blocked: bool = True) -> str:
         shape = page.new_shape()
         for s in strands:
             for i in range(len(s.points) - 1):
-                shape.draw_line(pymupdf.Point(*s.points[i]), pymupdf.Point(*s.points[i + 1]))
+                shape.draw_line(P(s.points[i]), P(s.points[i + 1]))
         shape.finish(color=colors[cid], width=2.2, stroke_opacity=0.75)
         shape.commit(overlay=True)
 
@@ -81,7 +90,7 @@ def render(result, out_path: str, show_blocked: bool = True) -> str:
                 v.center[0] - v.size, v.center[1] - v.size,
                 v.center[0] + v.size, v.center[1] + v.size,
             )
-            shape.draw_circle(pymupdf.Point(*v.center), v.size * 1.4)
+            shape.draw_circle(P(v.center), v.size * 1.4)
         shape.finish(color=VERTICAL, width=1.4, stroke_opacity=0.9)
         shape.commit(overlay=True)
 

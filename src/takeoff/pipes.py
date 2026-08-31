@@ -60,6 +60,12 @@ class PipeSelection:
         }
 
 
+def _project_key(sheet: Sheet) -> str | None:
+    from .layergrammar import project_key
+
+    return project_key(sheet.layers)
+
+
 def _pct(values: list[float], p: float) -> float:
     if not values:
         return 0.0
@@ -73,8 +79,21 @@ def classify(
     zonemap,
     scale_result,
     anchors: dict[str, int] | None = None,
+    layer_rule=None,
 ) -> PipeSelection:
-    """Klassificera alla stilkluster och valj rorstilen."""
+    """Klassificera alla stilkluster och valj rorstilen.
+
+    Tre metoder, i fallande tillforlitlighet:
+
+    ``layer_rule``  En lagerregel inducerad ur en handmatt ritning i SAMMA
+                    projekt. Ledningslagren pekas ut av CAD-standarden sjalv.
+    ``anchor_vote`` Ritningens egna beteckningar roster fram rorstilen (R7).
+    ``structural``  Sista utvagen: linjebredd over ritningens median plus
+                    kopplingsgrad. Generaliserar DALIGT - den missar ror som
+                    ritats i underlagets bredd och slapper igenom
+                    byggnadslager med samma profil - och markeras darfor
+                    alltid med flaggan ``pipe_style:structural``.
+    """
     blocked: list[Blocked] = []
     reasons: dict[str, str] = {}
     scores: dict[str, float] = {}
@@ -96,7 +115,29 @@ def classify(
 
     survivors = [c for c in styles.clusters if c.id not in reasons]
 
-    # ---- steg 1b: strukturella grindar --------------------------------------
+    # ---- steg 1b: lagerregel, nar en sadan galler for projektet -------------
+    if layer_rule is not None and layer_rule.applies_to(_project_key(sheet)):
+        pipe_ids = []
+        for c in survivors:
+            if layer_rule.matches(c.key.layer) and c.width > w_med * 1.02:
+                pipe_ids.append(c.id)
+                reasons[c.id] = "pipe"
+            else:
+                reasons[c.id] = "not_in_layer_rule" if not layer_rule.matches(c.key.layer) else "thin_for_service_layer"
+                for pid in c.path_ids:
+                    blocked.append(Blocked(pid, c.id, reasons[c.id], "layer_rule"))
+        accepted = sum(len(styles.get(cid).path_ids) for cid in pipe_ids)
+        assert accepted + len(blocked) == len(sheet.paths)
+        return PipeSelection(
+            sorted(pipe_ids),
+            blocked,
+            {},
+            reasons,
+            "layer_rule",
+            [f"pipe_style:layer_rule:{','.join(layer_rule.tokens)}"],
+        )
+
+    # ---- steg 1c: strukturella grindar --------------------------------------
     # Installationen ritas grovre an underlaget. Grinden ar ritningens egen
     # medianlinjebredd, inte ett matt i punkter (R1).
     # Ror bildar dessutom nat: ett rorkluster har banor som mots i andpunkter.

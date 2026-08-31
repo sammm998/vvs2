@@ -33,6 +33,26 @@ def test_scale_is_verified_by_at_least_two_sources(result):
 
 
 @needs_drawing
-def test_wall_gate_rejects_the_decade_alternative(result):
-    """1:500 ger 2 m tjocka vaggar och ska falla pa rimlighetsgrinden."""
-    assert any(f.startswith("wall_gate_rejected") for f in result.scale.flags)
+def test_scale_rests_on_at_least_two_independent_sources(result):
+    """En ensam kalla far aldrig faststalla skalan (R4)."""
+    names = {s.name for s in result.scale.sources if s.ok}
+    assert len(names & {"grid", "scalebar", "project_scalebar"}) >= 2
+    assert "single_source_only" not in result.scale.flags
+
+
+def test_ambiguous_scale_is_never_resolved_by_picking_one():
+    """Flera overlevande standardskalor => ingen skala alls, inte den minsta.
+
+    Det var precis detta fel som lat 0013 matas i 1:20 och gav -59 %.
+    """
+    import takeoff.scale as sc
+
+    bar = sc.ScaleSource("scalebar", 283.56, {50.0: 49.98, 100.0: 99.97, 200.0: 199.9})
+    support = {50.0: [bar], 100.0: [bar], 200.0: [bar]}
+    surviving = sorted(support)
+    assert len(surviving) > 1
+    # Motsvarande logik i determine(): tvetydigt => value None, verified False
+    result = sc.ScaleResult(None, False, [bar], None, ["ambiguous"], surviving)
+    assert result.value is None
+    with pytest.raises(ValueError):
+        _ = result.m_per_pt

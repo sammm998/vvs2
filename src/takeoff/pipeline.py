@@ -11,7 +11,7 @@ import os
 import statistics
 from dataclasses import dataclass, field
 
-from . import chain, extract, network, pipes, scale, styles, zones
+from . import chain, extract, layergrammar, network, pipes, scale, styles, zones
 from .triage import triage, TriageResult
 
 M_PER_MM = 1 / 1000.0
@@ -23,6 +23,7 @@ class SystemQuantity:
     layer: str | None
     length_m: float
     raw_length_m: float
+    masked_length_m: float
     strands: int
     verticals: int
     bends: int
@@ -49,6 +50,11 @@ class RunResult:
         return sum(q.length_m for q in self.quantities)
 
     @property
+    def masked_length_m(self) -> float:
+        """Langd i maskad zon. Redovisas, ingar inte i mangden (R10)."""
+        return sum(q.masked_length_m for q in self.quantities)
+
+    @property
     def coverage(self) -> float:
         accepted = sum(len(self.styles.get(c).path_ids) for c in self.selection.pipe_clusters)
         return (accepted + len(self.selection.blocked)) / max(len(self.sheet.paths), 1)
@@ -63,6 +69,7 @@ class RunResult:
             "pipe_clusters": len(self.selection.pipe_clusters),
             "method": self.selection.method,
             "total_length_m": round(self.total_length_m, 1),
+            "masked_length_m": round(self.masked_length_m, 1),
             "strands": len(self.net.strands),
             "nodes": len(self.net.nodes),
             "verticals": len(self.net.verticals),
@@ -73,6 +80,7 @@ class RunResult:
                     "layer": q.layer,
                     "length_m": round(q.length_m, 1),
                     "raw_length_m": round(q.raw_length_m, 1),
+                    "masked_length_m": round(q.masked_length_m, 1),
                     "strands": q.strands,
                     "verticals": q.verticals,
                     "bends": q.bends,
@@ -82,12 +90,24 @@ class RunResult:
         }
 
 
-def run(source: str, drawing: str | None = None, page: int = 0) -> RunResult:
+def run(
+    source: str,
+    drawing: str | None = None,
+    page: int = 0,
+    layer_rule=None,
+) -> RunResult:
     sheet = extract.load(source, page)
     tri = triage(sheet)
     style_index = styles.build(sheet)
     zonemap = zones.detect(sheet)
-    sc = scale.determine(sheet, style_index, zonemap.plan)
+    # R2: projektprofilen far ateranvandas inom samma projekt, aldrig mellan.
+    pkey = layergrammar.project_key(sheet.layers)
+    sc = scale.determine(
+        sheet,
+        style_index,
+        zonemap.plan,
+        reference=layergrammar.load_project_scale(pkey),
+    )
     flags: list[str] = []
     if not sc.verified:
         flags.append("scale_unverified:preliminary_quantities")
@@ -97,7 +117,9 @@ def run(source: str, drawing: str | None = None, page: int = 0) -> RunResult:
             f"Flaggor: {sc.flags}"
         )
 
-    selection = pipes.classify(sheet, style_index, zonemap, sc)
+    if layer_rule is None:
+        layer_rule = layergrammar.load_project_rule(pkey)
+    selection = pipes.classify(sheet, style_index, zonemap, sc, layer_rule=layer_rule)
     by_id = {p.id: p for p in sheet.paths}
 
     # Sammanfogning per stilkluster - aldrig over stilgranser (R7).
@@ -116,6 +138,12 @@ def run(source: str, drawing: str | None = None, page: int = 0) -> RunResult:
 
     net = network.build(runs_by_cluster, eps=unit)
 
+    # Fas 4: schrafferad zon = omrade ritningen sjalv undantar. Ledningar dar
+    # mats, men redovisas separat och gar inte in i mangden (R10).
+    mask = zones.hatch_mask(sheet, style_index, selection, zonemap)
+    if mask:
+        flags.append(f"masked_zone:{len(mask.clusters)}_hatch_clusters")
+
     # Vertikala ror: sma symboler pa rorlagren som inte sjalva ar rorstil.
     pipe_layers = {style_index.get(c).key.layer for c in selection.pipe_clusters}
     pipe_pids = {pid for c in selection.pipe_clusters for pid in style_index.get(c).path_ids}
@@ -127,7 +155,7 @@ def run(source: str, drawing: str | None = None, page: int = 0) -> RunResult:
     cluster_of_layer = {style_index.get(c).key.layer: c for c in selection.pipe_clusters}
     network.find_verticals(net, cand, cluster_of_layer, unit)
 
-    quantities = _quantify(sc, style_index, selection, chains, net)
+    quantities = _quantify(sc, style_index, selection, chains, net, mask)
     return RunResult(
         drawing=drawing or os.path.splitext(os.path.basename(source))[0],
         source=source,
@@ -144,7 +172,22 @@ def run(source: str, drawing: str | None = None, page: int = 0) -> RunResult:
     )
 
 
-def _quantify(sc, style_index, selection, chains, net) -> list[SystemQuantity]:
+def _masked_split(strands, mask) -> tuple[float, float]:
+    """Dela strakens langd i (utanfor mask, i mask)."""
+    outside = inside = 0.0
+    for s in strands:
+        for i in range(len(s.points) - 1):
+            a, b = s.points[i], s.points[i + 1]
+            L = math.dist(a, b)
+            mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+            if mask is not None and mask.contains(mid):
+                inside += L
+            else:
+                outside += L
+    return outside, inside
+
+
+def _quantify(sc, style_index, selection, chains, net, mask=None) -> list[SystemQuantity]:
     out: list[SystemQuantity] = []
     for cid in selection.pipe_clusters:
         c = style_index.get(cid)
@@ -158,12 +201,16 @@ def _quantify(sc, style_index, selection, chains, net) -> list[SystemQuantity]:
             f.append("scale_unverified")
         if selection.method == "structural":
             f.append("style_by_structure_not_anchor")
+        outside_pt, inside_pt = _masked_split(strands, mask)
+        if inside_pt > 0:
+            f.append("length_in_masked_zone_excluded")
         out.append(
             SystemQuantity(
                 cluster_id=cid,
                 layer=c.key.layer,
-                length_m=sc.to_m(sum(s.length for s in strands)),
+                length_m=sc.to_m(outside_pt),
                 raw_length_m=sc.to_m(c.total_length),
+                masked_length_m=sc.to_m(inside_pt),
                 strands=len(strands),
                 verticals=len(verts),
                 bends=max(0, len(strands) - 1),

@@ -169,14 +169,21 @@ def load_markup_geometry(pdf_path: str, page_number: int = 0) -> list[dict]:
     """
     import pymupdf
 
+    from .normalize import page_transform
+
     doc = pymupdf.open(pdf_path)
     page = doc[page_number]
+    # R8: aven facitgeometrin maste genom sidans transform. Annoteringarnas
+    # vertices ligger i raa PDF-koordinater precis som banorna, och pa en
+    # ritning med /Rotate hamnar de i en annan rymd an matningen om steget
+    # hoppas over. Pa en oroterad ritning ar det identitet och syns aldrig.
+    tf = page_transform(page)
     out: list[dict] = []
     for a in page.annots() or ():
         kind = a.type[1]
         if kind not in ("PolyLine", "Polygon"):
             continue
-        verts = [tuple(v) for v in (a.vertices or [])]
+        verts = [tf.apply(tuple(v)) for v in (a.vertices or [])]
         if not verts:
             continue
         label_raw = (a.info.get("subject") or "").strip()
@@ -188,7 +195,7 @@ def load_markup_geometry(pdf_path: str, page_number: int = 0) -> list[dict]:
                 "vertices": verts,
                 "is_vertical": is_vert,
                 "length_pt": sum(math.dist(verts[i], verts[i + 1]) for i in range(len(verts) - 1)),
-                "rect": tuple(a.rect),
+                "rect": tuple(tf.apply_rect(a.rect)),
             }
         )
     doc.close()

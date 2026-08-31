@@ -6,36 +6,47 @@ gäller före allt annat i detta repo; fasplanen ligger i `docs/FASER.md`.
 
 ## Status
 
-Byggt och verifierat på **W-50-1-A-0011**. Fas 0–4, 7 och 9 är på plats.
-Fas 5–6 (text, beteckningar, ankare) och fas 8 (per-beteckning) återstår.
+Kalibrerad pa **W-50-1-A-0011**. Verifierad pa **0013** och **0023**, som bada
+ar HALLNA UTE fran kalibreringen och inte har paverkat en enda parameter.
 
-Facitritningarna 0012, 0013 och generaliseringstestet 0032 fanns inte i
-underlaget, så de stoppgrindar som kräver dem är **inte** kontrollerade.
+| ritning | matt | facit | fel | MAPE/system | roll |
+|---|---|---|---|---|---|
+| 0011 | 222,9 m | 213,7 m | **+4,3 %** | 13,8 % | kalibrering |
+| 0013 | 117,8 m | 112,9 m | **+2,6 %** | 1,3 % | hallen ute |
+| 0023 | 38,2 m | 36,4 m | **+5,0 %** | 4,8 % | hallen ute |
 
-## Resultat på 0011
+Skalan verifieras geometriskt till 1:50 pa alla tre, med 0,03 % avvikelse
+mellan kallorna. Tackningen (R6) ar 1,0000 pa alla tre.
 
-```
-täckning (R6)                1,0000
-skala                        1:50, verifierad, 0,03 % mellan källorna
-rörstilskluster              6 (noll falska träffar)
-total längd i facitomfång    223,1 m mot facit 213,7 m   (+4,4 %)
-utanför facitomfång          58,8 m  (VVC1, ett eget system)
-vertikala rör                61 mot facit 55             (+6)
-MAPE per system              13,9 %
-```
+Recall mot facitgeometrin ar 98-99 % pa alla tre: motorn hittar praktiskt
+taget varje meter kalkylatorn matt. Overskottet ar geometri som facit inte
+tacker, inte missad geometri.
 
-Per system:
+## Kan den nya ritningar?
 
-| mätt | facit | fel | lager |
-|---|---|---|---|
-| 115,0 | 114,0 | +0,9 % | `V-53BB-FE--S3-` |
-| 33,6 | 34,1 | −1,5 % | `V-52BC-FE--V1-` |
-| 32,6 | 33,3 | −2,2 % | `V-52BB-FE--V2-` |
-| 21,4 | 14,6 | +46,5 % | `V-53BB-FE--S1-` |
-| 20,5 | 17,4 | +18,2 % | `V-52BB-FE--V1-` |
-| 58,8 | — | utanför omfång | `V-5--BEE--_V50` (VVC1) |
+Ja, inom samma projekt - och det ar en precis avgransning, inte en brasklapp.
 
-De tre största systemen ligger inom 2,2 %. Felet sitter i de två minsta.
+**Inom ett kalibrerat projekt** kors en ny ritning utan handpaslag. Bade
+lagerregeln och skalreferensen kommer ur projektprofilen. Det ar sa 0013 och
+0023 kordes.
+
+**I ett nytt projekt** behovs EN handmatt ritning. `takeoff calibrate`
+inducerar da lagerregeln ur facitets geometri och skalstockens spann ur den
+verifierade skalan. Det ar samma arbetsgang CLAUDE.md avslutar med, och skalet
+ar att lagerkonventioner varierar mellan projekterande foretag (R2).
+
+**Utan kalibrering** faller motorn tillbaka pa ett strukturellt urval
+(linjebredd over ritningens median plus kopplingsgrad). Det urvalet ar
+markerat `pipe_style:structural` och ar matbart samre: pa 0013 missade det
+tre av sex rorsystem och slappte igenom tva arkitektlager. Lita inte pa det
+utan granskning.
+
+**Nar underlaget inte racker vagrar motorn.** 0023 saknar modulnat som riktig
+text; innan skalreferensen fanns stannade korningen med
+`ambiguous:1:50,1:100,1:200` i stallet for att valja en skala. En gissad
+skala multiplicerar hela mangdforteckningen med fel tal, sa det ar ratt
+beteende - men det betyder ocksa att en ny ritning kan krava kalibrering
+innan den gar att mata.
 
 ## Vad probet visade (fas 0)
 

@@ -51,6 +51,7 @@ class Evaluation:
         _line("i facitomfang", f"{m['in_scope_length_m']:.1f} m ({m['in_scope_error_pct']:+.1f}%)",
               ok=abs(m["in_scope_error_pct"]) <= 10)
         _line("utanfor facitomfang", f"{m['out_of_scope_length_m']:.1f} m ({m['out_of_scope_note']})")
+        _line("i maskad zon (ej mangd)", f"{m['masked_length_m']:.1f} m")
         _line("vertikala ror", f"{m['n_verticals']} mot facit {f['total_verticals']:.0f} "
                                f"({m['vertical_error']:+.0f})", ok=abs(m["vertical_error"]) <= 10)
         _line("noder < 3x beteckningar", f"{m['n_nodes']} vs {3 * f['n_labels']}",
@@ -108,6 +109,7 @@ def evaluate(
         "n_strands": len(r.net.strands),
         "n_verticals": len(r.net.verticals),
         "total_length_m": r.total_length_m,
+        "masked_length_m": r.masked_length_m,
         "method": r.selection.method,
         "flags": r.flags + r.selection.flags + r.scale.flags,
         "facit": None,
@@ -157,7 +159,12 @@ def evaluate(
     return Evaluation(r.drawing, m)
 
 
-def facit_scope(result: pipeline.RunResult, geometry: list[dict], tol_units: float = 2.0) -> dict:
+def facit_scope(
+    result: pipeline.RunResult,
+    geometry: list[dict],
+    tol_units: float = 2.0,
+    clusters: list[str] | None = None,
+) -> dict:
     """Harled vilka stilkluster facitet faktiskt omfattar, ur dess geometri.
 
     For varje facitpolylinje soks det stilkluster vars banor ligger narmast.
@@ -167,6 +174,10 @@ def facit_scope(result: pipeline.RunResult, geometry: list[dict], tol_units: flo
     Ingen lagernamnslista hardkodas; kopplingen kommer ur geometrin.
     """
     by_id = {p.id: p for p in result.sheet.paths}
+    # Vilka kluster som far ta emot facitgeometri. Vid kalibrering maste ALLA
+    # kluster vara med: att bara erbjuda dem som rorurvalet redan godkant vore
+    # cirkulart och skulle dolja precis de lager urvalet missade.
+    pool = clusters if clusters is not None else result.selection.pipe_clusters
     unit = statistics.median(
         [result.styles.get(c).width for c in result.selection.pipe_clusters]
     ) if result.selection.pipe_clusters else result.sheet.epsilon()
@@ -175,7 +186,7 @@ def facit_scope(result: pipeline.RunResult, geometry: list[dict], tol_units: flo
     # Rutnat over rorklustrens segment
     cell = max(tol * 6, 1e-6)
     grid: dict[tuple[int, int], list[tuple[str, tuple, tuple]]] = {}
-    for cid in result.selection.pipe_clusters:
+    for cid in pool:
         for pid in result.styles.get(cid).path_ids:
             for a, b in by_id[pid].segments:
                 if math.dist(a, b) <= 0:
@@ -215,10 +226,20 @@ def facit_scope(result: pipeline.RunResult, geometry: list[dict], tol_units: flo
                 p = (v[i][0] + (v[i + 1][0] - v[i][0]) * t, v[i][1] + (v[i + 1][1] - v[i][1]) * t)
                 d, cid = nearest_cluster(p)
                 if cid is not None and d <= tol:
-                    votes[cid] = votes.get(cid, 0.0) + L / (n + 1)
+                    # Avstandsviktad rost: ett kluster som ligger RAKT under
+                    # facitlinjen vager tyngre an ett som bara ryms inom
+                    # toleransen. Utan vikten vinner ibland en underlagslinje
+                    # som rakar folja roret en bit.
+                    votes[cid] = votes.get(cid, 0.0) + (L / (n + 1)) / (1.0 + d)
         if not votes:
             continue
         cid = max(votes, key=votes.get)
+        # Facitlinjen ritades OVANPA ledningen. Bar det narmaste klustret
+        # bara en liten del av den ar traffen en tillfallighet - typiskt en
+        # beteckningstext eller ett underlag som rakar folja roret en bit -
+        # och far inte gora det klustret till ett ledningslager.
+        if votes[cid] < g["length_pt"] * 0.35:
+            continue
         facit_by_cluster[cid] = facit_by_cluster.get(cid, 0.0) + g["length_pt"] * m_per_pt
         label_by_cluster.setdefault(cid, set()).add(g["label"])
 
