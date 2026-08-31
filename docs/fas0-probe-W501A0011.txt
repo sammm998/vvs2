@@ -1,0 +1,210 @@
+
+##############################################################################
+# data/W501A0011-single.pdf
+# sida 0: rect=Rect(0.0, 0.0, 2384.0, 1684.0) rotate=0 banor=25225
+##############################################################################
+
+==============================================================================
+FRAGA 1 - OCG-lager
+==============================================================================
+  43 OCG:er deklarerade, 43 med banor pa sidan.
+    banor    langd_m  lager
+     7020     2239.6  'Kristianstad_logo_cmyk vit text$0$Layer 1'
+     4578      630.4  '268140-W-50-P-A-00|V-53BB--T--S3--'
+     4229      720.2  '0'
+     2878      428.0  '268140-W-50-P-A-00|V-5-----T1_-'
+     1447      151.9  'HUS A - GRUNDPLAN|K-------Y3-'
+      701      173.2  'HUS A - GRUNDPLAN|K-15S---EK_'
+      677      120.8  '268140-W-50-P-A-00|V-53BB-FE--S3-'
+      651       59.5  'A-------AA-'
+      471       91.4  '268140-W-50-P-A-00|V-53BB--T--S1--'
+      408        0.0  'A-------H-N'
+      227       34.5  'slipstext|V-5-----T1_'
+      212      643.6  'A-------EXN'
+      194       56.4  '268140-W-50-P-A-00|V-5--BEE--_V50'
+      171       11.3  'A131'
+      147       21.2  '268140-W-50-P-A-00|V-52B---T--V1--'
+      121       30.3  '268140-W-50-P-A-00|V-52BC-FE--V1-'
+      115       29.5  '268140-W-50-P-A-00|V-52BB-FE--V2-'
+       98       13.6  '268140-W-50-P-A-00|V-52B---T--V2--'
+       94       21.9  '268140-W-50-P-A-00|V-53BB-FE--S1-'
+       93       40.9  'HUS A - GRUNDPLAN|K-------EK_'
+       91       74.7  '268140-W-50-P-A-00|K-------EDN'
+       86       15.3  '268140-W-50-P-A-00|PM2'
+       75       10.3  '268140-W-50-P-A-00|V-53BB-LE--S3--'
+       71      160.2  'HUS A - GRUNDPLAN|K-15S---EI_'
+       64       17.1  '268140-W-50-P-A-00|V-52BB-FE--V1-'
+       57       11.0  'HUS A - GRUNDPLAN|K-------E-_'
+       42       25.2  'A-------O4N'
+       37       22.0  '268140-W-50-P-A-00|V-52B---S-N'
+       30        3.0  '268140-W-50-P-A-00|K-------EKN'
+       28      212.9  'HUS A - GRUNDPLAN|K-27B---EI_'
+       25       19.9  'A-------F-N'
+       22        1.1  '268140-W-50-P-A-00|S com'
+       22        2.7  '268140-W-50-P-A-00|V-53BB-LE--S1--'
+       18       12.8  '268140-W-50-P-A-00|V-56----S-N'
+        9       26.1  'HUS A - GRUNDPLAN|K-------Y2-'
+        4        8.6  '268140-W-50-P-A-00|K-27F---EI_'
+        3        1.7  '268140-W-50-P-A-00|V-52B--FE--V1--'
+        2       43.5  'HUS A - GRUNDPLAN|K-15S---EJ_'
+        2        2.5  'HUS A - GRUNDPLAN|K-42E---EI_'
+        2        0.7  '268140-W-50-P-A-00|K-------D--'
+        1       43.4  'HUS A - GRUNDPLAN|K-27F---EI_'
+        1        0.9  'HUS A - GRUNDPLAN|K----------'
+        1        0.7  '268140-W-50-P-A-00|K-------J1-'
+  banor utan lager: 0
+
+==============================================================================
+FRAGA 2 - riktig PDF-text
+==============================================================================
+  19 textord i hela sidan.
+  storsta inramade tomma ytan (planyta): Rect(294.29998779296875, 189.280029296875, 2215.800048828125, 1550.9200439453125)
+  6 av 19 ord innanfor planytan (32%).
+  => Ritningens text ar vektoriserad (SHX). Glyfklustring + vision kravs.
+     'A2' @ (225,1299)
+     'A00' @ (133,1311)
+     'A100' @ (213,744)
+     'A200' @ (211,177)
+     '00' @ (400,1527)
+     '2' @ (418,1607)
+     '70' @ (796,1607)
+     '140' @ (1187,1607)
+     '210' @ (1585,1607)
+     '2024-04-19' @ (2236,1107)
+     'ENL.' @ (2091,1107)
+     'PM-1' @ (2113,1107)
+     'A' @ (2052,1107)
+     'A.B.' @ (2301,1107)
+     '2024-05-07' @ (2236,1090)
+     'ENL.' @ (2091,1090)
+     'PM-2' @ (2113,1090)
+     'B' @ (2052,1090)
+     'A.B.' @ (2301,1090)
+
+==============================================================================
+FRAGA 3 - stilinventering
+==============================================================================
+  80 stilkluster. Totallangd 6234 m @ 1:50.
+    #  banor   langd_m  andel  stroke / bredd / streck / lager
+    0   1677     917.7  14.7%  (0.08,0.16,0.40) w=0.00 solid L='Kristianstad_logo_cmyk vit text$0$Layer 1'
+    1   3672     636.4  10.2%  (0.96,0.80,0.48) w=0.00 solid L='Kristianstad_logo_cmyk vit text$0$Layer 1'
+    2    209     593.5   9.5%  (0.40,0.40,0.40) w=0.72 solid L='A-------EXN'
+    3   3750     590.0   9.5%  (0.00,0.00,0.00) w=0.72 solid L='0'
+    4    240     349.4   5.6%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-53BB--T--S3--'
+    5    100     311.5   5.0%  (0.08,0.24,0.48) w=0.00 solid L='Kristianstad_logo_cmyk vit text$0$Layer 1'
+    6   1301     300.5   4.8%  (0.00,0.00,0.00) w=0.00 solid L='Kristianstad_logo_cmyk vit text$0$Layer 1'
+    7   4288     271.8   4.4%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-53BB--T--S3--'
+    8   2696     222.0   3.6%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-5-----T1_-'
+    9     28     212.9   3.4%  (0.72,0.72,0.72) w=0.72 solid L='HUS A - GRUNDPLAN|K-27B---EI_'
+   10    179     205.5   3.3%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-5-----T1_-'
+   11    701     173.2   2.8%  (0.72,0.72,0.72) w=0.72 solid L='HUS A - GRUNDPLAN|K-15S---EK_'
+   12     71     160.2   2.6%  (0.72,0.72,0.72) w=0.72 solid L='HUS A - GRUNDPLAN|K-15S---EI_'
+   13   1447     151.9   2.4%  (0.72,0.72,0.72) w=0.36 solid L='HUS A - GRUNDPLAN|K-------Y3-'
+   14    395     111.4   1.8%  (0.00,0.00,0.00) w=0.96 solid L='0'
+   15    513      98.7   1.6%  (0.00,0.00,0.00) w=2.04 solid L='268140-W-50-P-A-00|V-53BB-FE--S3-'
+   16     91      74.7   1.2%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|K-------EDN'
+   17    270      73.6   1.2%  (0.00,0.00,0.00) w=0.00 solid L='Kristianstad_logo_cmyk vit text$0$Layer 1'
+   18    651      59.5   1.0%  (0.00,0.00,0.00) w=0.72 solid L='A-------AA-'
+   19     33      57.8   0.9%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-53BB--T--S1--'
+   20    194      56.4   0.9%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-5--BEE--_V50'
+   21      3      50.1   0.8%  (0.00,0.00,0.00) w=0.72 solid L='A-------EXN'
+   22      2      43.5   0.7%  (0.72,0.72,0.72) w=0.72 solid L='HUS A - GRUNDPLAN|K-15S---EJ_'
+   23      1      43.4   0.7%  (0.72,0.72,0.72) w=0.72 solid L='HUS A - GRUNDPLAN|K-27F---EI_'
+   24     93      40.9   0.7%  (0.72,0.72,0.72) w=0.72 solid L='HUS A - GRUNDPLAN|K-------EK_'
+   25    432      32.3   0.5%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-53BB--T--S1--'
+   26     99      28.7   0.5%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-52BC-FE--V1-'
+   27     95      27.8   0.4%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-52BB-FE--V2-'
+   28      9      26.1   0.4%  (0.72,0.72,0.72) w=0.48 solid L='HUS A - GRUNDPLAN|K-------Y2-'
+   29     88      22.1   0.4%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-53BB-FE--S3-'
+   30     37      22.0   0.4%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-52B---S-N'
+   31      1      20.1   0.3%  (0.00,0.00,0.00) w=0.00 solid L='A-------O4N'
+   32     84      18.8   0.3%  (0.00,0.00,0.00) w=0.48 solid L='0'
+   33    175      18.7   0.3%  (0.00,0.00,0.00) w=0.72 solid L='slipstext|V-5-----T1_'
+   34     72      18.2   0.3%  (0.00,0.00,0.00) w=2.04 solid L='268140-W-50-P-A-00|V-53BB-FE--S1-'
+   35     60      16.8   0.3%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-52BB-FE--V1-'
+   36     86      15.3   0.2%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|PM2'
+   37     14      12.6   0.2%  (0.00,0.00,0.00) w=0.00 solid L='268140-W-50-P-A-00|V-56----S-N'
+   38      1      11.6   0.2%  (0.00,0.00,0.00) w=0.96 solid L='A-------F-N'
+   39    171      11.3   0.2%  (0.00,0.00,0.00) w=0.72 solid L='A131'
+   40     57      11.0   0.2%  (0.72,0.72,0.72) w=0.96 solid L='HUS A - GRUNDPLAN|K-------E-_'
+   41    138      10.9   0.2%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-52B---T--V1--'
+   42      3       9.4   0.2%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-52B---T--V1--'
+   43     36       9.3   0.1%  (0.00,0.00,0.00) w=0.96 solid L='slipstext|V-5-----T1_'
+   44     50       9.3   0.1%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-53BB--T--S3--'
+   45      4       8.6   0.1%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|K-27F---EI_'
+   46     92       7.3   0.1%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-52B---T--V2--'
+   47     23       7.2   0.1%  (0.00,0.00,0.00) w=0.72 solid L='A-------F-N'
+   48     13       6.6   0.1%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-53BB-LE--S3--'
+   49     16       6.5   0.1%  (0.00,0.00,0.00) w=0.48 solid L='slipstext|V-5-----T1_'
+   50      2       5.7   0.1%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-52B---T--V2--'
+   51     62       3.8   0.1%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-53BB-LE--S3--'
+   52     14       3.7   0.1%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-53BB-FE--S1-'
+   53     30       3.0   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|K-------EKN'
+   54     28       2.9   0.0%  (0.00,0.00,0.00) w=0.96 solid L='A-------O4N'
+   55      2       2.5   0.0%  (0.72,0.72,0.72) w=0.72 solid L='HUS A - GRUNDPLAN|K-42E---EI_'
+   56      5       1.9   0.0%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-53BB-LE--S1--'
+   57      3       1.7   0.0%  (0.00,0.00,0.00) w=0.72 solid L='268140-W-50-P-A-00|V-52B--FE--V1--'
+   58     10       1.7   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-52BB-FE--V2-'
+   59     10       1.6   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-52BC-FE--V1-'
+   60      5       1.3   0.0%  (0.00,0.00,0.00) w=0.72 solid L='A-------O4N'
+   61      6       1.3   0.0%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-53BB--T--S1--'
+   62     22       1.1   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|S com'
+   63      1       1.0   0.0%  (0.00,0.00,0.00) w=0.00 solid L='A-------F-N'
+   64      6       0.9   0.0%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-52B---T--V1--'
+   65      1       0.9   0.0%  (0.72,0.72,0.72) w=0.48 solid L='HUS A - GRUNDPLAN|K----------'
+   66      8       0.8   0.0%  (0.00,0.00,0.00) w=0.48 solid L='A-------O4N'
+   67     17       0.8   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-53BB-LE--S1--'
+   68      2       0.7   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|K-------D--'
+   69      1       0.7   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|K-------J1-'
+   70      4       0.6   0.0%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-52B---T--V2--'
+   71      3       0.5   0.0%  (0.00,0.00,0.00) w=1.44 solid L='268140-W-50-P-A-00|V-5-----T1_-'
+   72      2       0.3   0.0%  (0.00,0.00,0.00) w=0.48 solid L='268140-W-50-P-A-00|V-52BB-FE--V1-'
+   73      4       0.2   0.0%  (0.00,0.00,0.00) w=0.00 solid L='268140-W-50-P-A-00|V-56----S-N'
+   74     12       0.0   0.0%  (0.72,0.72,0.72) w=0.72 solid L='268140-W-50-P-A-00|V-52BC-FE--V1-'
+   75     76       0.0   0.0%  (0.72,0.72,0.72) w=0.72 solid L='268140-W-50-P-A-00|V-53BB-FE--S3-'
+   76     10       0.0   0.0%  (0.72,0.72,0.72) w=0.72 solid L='268140-W-50-P-A-00|V-52BB-FE--V2-'
+   77      2       0.0   0.0%  (0.72,0.72,0.72) w=0.72 solid L='268140-W-50-P-A-00|V-52BB-FE--V1-'
+   78      8       0.0   0.0%  (0.72,0.72,0.72) w=0.72 solid L='268140-W-50-P-A-00|V-53BB-FE--S1-'
+   79    408       0.0   0.0%  (0.00,0.00,0.00) w=0.48 solid L='A-------H-N'
+
+==============================================================================
+FRAGA 4 - klusteroverlays
+==============================================================================
+  skrev out/probe/W501A0011-single/cluster_00.png  (1677 banor, lager='Kristianstad_logo_cmyk vit text$0$Layer 1')
+  skrev out/probe/W501A0011-single/cluster_01.png  (3672 banor, lager='Kristianstad_logo_cmyk vit text$0$Layer 1')
+  skrev out/probe/W501A0011-single/cluster_02.png  (209 banor, lager='A-------EXN')
+  skrev out/probe/W501A0011-single/cluster_03.png  (3750 banor, lager='0')
+  skrev out/probe/W501A0011-single/cluster_04.png  (240 banor, lager='268140-W-50-P-A-00|V-53BB--T--S3--')
+  skrev out/probe/W501A0011-single/cluster_05.png  (100 banor, lager='Kristianstad_logo_cmyk vit text$0$Layer 1')
+  skrev out/probe/W501A0011-single/cluster_06.png  (1301 banor, lager='Kristianstad_logo_cmyk vit text$0$Layer 1')
+  skrev out/probe/W501A0011-single/cluster_07.png  (4288 banor, lager='268140-W-50-P-A-00|V-53BB--T--S3--')
+  skrev out/probe/W501A0011-single/cluster_08.png  (2696 banor, lager='268140-W-50-P-A-00|V-5-----T1_-')
+  skrev out/probe/W501A0011-single/cluster_09.png  (28 banor, lager='HUS A - GRUNDPLAN|K-27B---EI_')
+  skrev out/probe/W501A0011-single/cluster_10.png  (179 banor, lager='268140-W-50-P-A-00|V-5-----T1_-')
+  skrev out/probe/W501A0011-single/cluster_11.png  (701 banor, lager='HUS A - GRUNDPLAN|K-15S---EK_')
+  skrev out/probe/W501A0011-single/cluster_12.png  (71 banor, lager='HUS A - GRUNDPLAN|K-15S---EI_')
+  skrev out/probe/W501A0011-single/cluster_13.png  (1447 banor, lager='HUS A - GRUNDPLAN|K-------Y3-')
+  skrev out/probe/W501A0011-single/cluster_14.png  (395 banor, lager='0')
+  skrev out/probe/W501A0011-single/cluster_15.png  (513 banor, lager='268140-W-50-P-A-00|V-53BB-FE--S3-')
+  skrev out/probe/W501A0011-single/cluster_16.png  (91 banor, lager='268140-W-50-P-A-00|K-------EDN')
+  skrev out/probe/W501A0011-single/cluster_17.png  (270 banor, lager='Kristianstad_logo_cmyk vit text$0$Layer 1')
+  skrev out/probe/W501A0011-single/cluster_18.png  (651 banor, lager='A-------AA-')
+  skrev out/probe/W501A0011-single/cluster_19.png  (33 banor, lager='268140-W-50-P-A-00|V-53BB--T--S1--')
+  skrev out/probe/W501A0011-single/cluster_20.png  (194 banor, lager='268140-W-50-P-A-00|V-5--BEE--_V50')
+  skrev out/probe/W501A0011-single/cluster_21.png  (3 banor, lager='A-------EXN')
+  skrev out/probe/W501A0011-single/cluster_22.png  (2 banor, lager='HUS A - GRUNDPLAN|K-15S---EJ_')
+  skrev out/probe/W501A0011-single/cluster_23.png  (1 banor, lager='HUS A - GRUNDPLAN|K-27F---EI_')
+
+==============================================================================
+FRAGA 5 - skalstock
+==============================================================================
+  kandidatrad (regelbundna sifferetiketter):
+     2 @ x=424.8 y=1606.9
+     70 @ x=810.3 y=1606.9
+     140 @ x=1207.0 y=1606.9
+     210 @ x=1604.0 y=1606.9
+  pt per etikettenhet: 5.670  (spridning mellan steg 0.09%)
+     om etiketterna ar dm: skala 1:50.00
+     om etiketterna ar m: skala 1:499.98
+     om etiketterna ar cm: skala 1:5.00
+  1072 smala vektorobjekt (delstreck) i etiketternas zon.
