@@ -6,8 +6,9 @@ gäller före allt annat i detta repo; fasplanen ligger i `docs/FASER.md`.
 
 ## Status
 
-Kalibrerad pa **W-50-1-A-0011**. Verifierad pa **0013**, **0014** och **0023**,
-som alla ar HALLNA UTE fran kalibreringen och inte har paverkat en parameter.
+Kalibrerad pa **W-50-1-A-0011**. Verifierad pa **0013**, **0014**, **0023** och
+**0111**, som alla ar HALLNA UTE fran kalibreringen och inte har paverkat en
+enda parameter.
 
 | ritning | matt | facit | fel | MAPE/system | vertikala | roll |
 |---|---|---|---|---|---|---|
@@ -15,14 +16,17 @@ som alla ar HALLNA UTE fran kalibreringen och inte har paverkat en parameter.
 | 0013 | 110,3 m | 112,9 m | **-2,3 %** | 1,3 % | 24 / 24 | hallen ute |
 | 0014 | 48,3 m | 50,9 m | **-5,0 %** | 4,4 % | 20 / 16 | hallen ute |
 | 0023 | 35,6 m | 36,4 m | **-2,3 %** | 2,5 % | 13 / 9 | hallen ute |
+| 0111 | 512,7 m | 519,5 m | **-1,3 %** | 20,8 % | 150 / 90 | hallen ute |
 
-Medelavvikelse 2,8 %. Alla fyra passerar bade langdgrinden (+/-10 %),
-MAPE-grinden (<10 %) och vertikalgrinden (+/-10). Skalan verifieras
-geometriskt till 1:50 pa alla fyra med 0,03 % avvikelse mellan kallorna, och
-tackningen (R6) ar 1,0000.
+Medelavvikelse pa langd: 2,5 %. Alla fem passerar langdgrinden (+/-10 %) och
+har tackning (R6) 1,0000 och skala 1:50 verifierad geometriskt med 0,03 %
+avvikelse mellan kallorna.
 
-Recall mot facitgeometrin ar 98-99 %: motorn hittar praktiskt taget varje
-meter kalkylatorn matt.
+Recall mot facitgeometrin ar 98-99 % pa alla fem: motorn hittar praktiskt
+taget varje meter kalkylatorn matt.
+
+0111 ar storst och tatast (519 m, 34 beteckningar, 45 000 banor mot 20-25 000)
+och den enda som annu faller pa MAPE och vertikalrakning.
 
 ## Kan den nya ritningar?
 
@@ -30,7 +34,11 @@ Ja, inom samma projekt - och det ar en precis avgransning, inte en brasklapp.
 
 **Inom ett kalibrerat projekt** kors en ny ritning utan handpaslag. Bade
 lagerregeln och skalreferensen kommer ur projektprofilen. Sa kordes 0013,
-0014 och 0023.
+0014, 0023 och 0111. Projektet identifieras av PROJEKTNUMRET i lagerprefixen,
+inte av modellfilen: en ritning bar ofta flera modeller samtidigt
+(`268140-W-50-P-A-01` for VVS, `268140-A-40-P-A-01` for arkitekt) och samma
+projekt anvander flera. Att lasa nyckeln till modellfilen gjorde varje modell
+till ett eget "projekt" och tvingade fram onodig omkalibrering.
 
 **I ett nytt projekt** behovs EN handmatt ritning. `takeoff calibrate`
 inducerar lagerregeln ur facitets geometri och skalstockens spann ur den
@@ -43,22 +51,34 @@ ar att lagerkonventioner varierar mellan projekterande foretag (R2).
 rorsystem och slappte igenom tva arkitektlager. Lita inte pa det utan
 granskning.
 
-**Nar underlaget inte racker vagrar motorn.** 0023 saknar modulnat som riktig
-text; innan skalreferensen fanns stannade korningen med
-`ambiguous:1:50,1:100,1:200` i stallet for att valja en skala. En gissad skala
-multiplicerar hela mangdforteckningen med fel tal.
+**Nar underlaget inte racker vagrar motorn.** Bade 0023 och 0111 saknar
+modulnat som riktig text; innan projektets skalreferens fanns stannade
+korningen med `ambiguous:1:50,1:100` i stallet for att valja en skala. En
+gissad skala multiplicerar hela mangdforteckningen med fel tal.
 
 ## Maskade zoner
 
 Ritningarna redovisar geometri som ligger utanfor det som mangdas: rorstrackor
 genom schrafferade omraden vid entreprenadgransen, ritade for att visa
-anslutningen. Pa 0014 var det 39,9 m av 88,2 - nastan halva matningen.
+anslutningen. Pa 0014 var det 39,9 m av 88,2 - nastan halva matningen, och pa
+0111 84,8 m.
 
-Zonen harleds ur ritningens egen schraffering: ett kluster av parallella,
-osammanhangande linjer i hogst tva riktningar, som FYLLER sin yta tatare an
-all annan riktad geometri pa arket. Slutningen ar exakt sa bred som
-schrafferingens egen linjedelning, sa att ytan mellan strecken sluts utan att
-zonen svaller ut over sin kant.
+Zonen harleds ur ritningens egen schraffering, med tre villkor som alla ar
+relativa till ritningen sjalv:
+
+1. **Regelbundna parallella grannar.** Matt lokalt, granne mot granne, sa att
+   det inte spelar nagon roll om monstret ligger som ett block eller som en
+   ram runt planet. Ett bbox-baserat matt klarade 0011-0023 men foll pa 0111,
+   dar schrafferingen ramar in planet i stallet for att fylla en ruta.
+2. **Fin delning**, hogst en hundradel av arkets diagonal. Schraffering ar en
+   ritteknisk fyllning; modulnat och rumsindelning har delningar i
+   byggnadsmatt och faller bort har.
+3. **Stor plantackning**, som utstickare. Dorrslag och trappor ar ocksa
+   regelbundna och finmaskiga men tacker under 1 % av planet, mot
+   schrafferingens 10-26 %.
+
+Slutningen ar exakt sa bred som schrafferingens egen linjedelning, sa att ytan
+mellan strecken sluts utan att zonen svaller ut over sin kant.
 
 Bade langden och antalet vertikala ror i zonen redovisas som egna varden. De
 tas aldrig bort tyst (R10).

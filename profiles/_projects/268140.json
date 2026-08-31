@@ -1,12 +1,12 @@
 {
-  "project_key": "268140-W-50-P-A-00",
+  "project_key": "268140",
   "layer_rule": {
     "tokens": [
       "-FE-"
     ],
     "valid": true,
     "reason": "",
-    "project_key": "268140-W-50-P-A-00",
+    "project_key": "268140",
     "calibrated_on": "W501A0011-single",
     "positives": [
       "268140-W-50-P-A-00|V-52BB-FE--V1-",
@@ -18,7 +18,7 @@
     "negatives_excluded": 33
   },
   "scale_reference": {
-    "project_key": "268140-W-50-P-A-00",
+    "project_key": "268140",
     "pitch_pt": 283.5599,
     "divisions": 10,
     "span_mm": 5001.7,

@@ -25,6 +25,10 @@ Box = tuple[float, float, float, float]
 # parallella vaggkonturer ar inte en schrafferad yta. Antal, inte matt (R1).
 MIN_HATCH_PATHS = 60
 
+# Andel grannlinjer som maste ligga pa samma delning for att monstret ska
+# raknas som regelbundet. Dimensionslos andel (R1).
+MIN_HATCH_REGULARITY = 0.80
+
 
 @dataclass
 class Zone:
@@ -325,22 +329,60 @@ def _hatch_pitch(cluster, by_id) -> tuple[float, float]:
     return (pitch, n / len(gaps))
 
 
-def _top_k_share(cluster, k: int) -> float:
-    """Andel av langden i klustrets k starkaste riktningar."""
-    v = sorted(cluster.angle_histogram.values(), reverse=True)
-    return sum(v[:k])
+def _parallel_pitch(cluster, by_id) -> tuple[float, float]:
+    """Delningen mellan parallella grannlinjer, och hur regelbunden den ar.
 
+    For varje linje soks narmaste parallella granne som overlappar den i
+    langdled. Returnerar (typisk delning, andel grannar pa den delningen).
 
-def _fill_ratio(cluster, by_id, cell: float) -> float:
-    """Hur stor del av klustrets egen bbox som dess linjer passerar igenom.
-
-    Ytschraffering FYLLER sin ruta; ett vaggunderlag ritar bara konturer i
-    den. Det ar den skillnaden som skiljer en maskad zon fran byggnaden.
+    Det ar detta som DEFINIERAR en schraffering: parallella linjer pa
+    regelbundet avstand. Matt lokalt, granne mot granne, sa att det inte
+    spelar nagon roll om schrafferingen ligger som ett block eller som en
+    ram runt planet. Ett bbox-baserat matt klarar det forsta men inte det
+    andra.
     """
-    x0, y0, x1, y1 = cluster.bbox
-    area = (x1 - x0) * (y1 - y0)
-    if area <= 0 or cell <= 0:
-        return 0.0
+    lines = []
+    for pid in cluster.path_ids:
+        for a, b in by_id[pid].segments:
+            if math.dist(a, b) > 0:
+                lines.append((a, b, math.atan2(b[1] - a[1], b[0] - a[0]) % math.pi))
+    if len(lines) < 20:
+        return (0.0, 0.0)
+    dominant = collections.Counter(round(ang, 2) for _, _, ang in lines).most_common(1)[0][0]
+    sel = [
+        (a, b) for a, b, ang in lines
+        if min(abs(ang - dominant), math.pi - abs(ang - dominant)) < 0.05
+    ]
+    if len(sel) < 20:
+        return (0.0, 0.0)
+    nx, ny = -math.sin(dominant), math.cos(dominant)
+    tx, ty = math.cos(dominant), math.sin(dominant)
+    items = sorted(
+        (
+            a[0] * nx + a[1] * ny,
+            min(a[0] * tx + a[1] * ty, b[0] * tx + b[1] * ty),
+            max(a[0] * tx + a[1] * ty, b[0] * tx + b[1] * ty),
+        )
+        for a, b in sel
+    )
+    neighbours = []
+    for i, (p0, s0, e0) in enumerate(items):
+        for j in range(i + 1, len(items)):
+            p1, s1, e1 = items[j]
+            gap = p1 - p0
+            if gap <= 0.05:
+                continue
+            if min(e0, e1) - max(s0, s1) > 0.3 * min(e0 - s0, e1 - s1):
+                neighbours.append(gap)
+                break
+    if len(neighbours) < 10:
+        return (0.0, 0.0)
+    pitch = collections.Counter(round(d, 1) for d in neighbours).most_common(1)[0][0]
+    regular = sum(1 for d in neighbours if abs(d - pitch) <= pitch * 0.15) / len(neighbours)
+    return (pitch, regular)
+
+
+def _covered_cells(cluster, by_id, cell: float) -> set[tuple[int, int]]:
     cells: set[tuple[int, int]] = set()
     for pid in cluster.path_ids:
         for a, b in by_id[pid].segments:
@@ -349,76 +391,72 @@ def _fill_ratio(cluster, by_id, cell: float) -> float:
                 t = k / n
                 cells.add((int((a[0] + (b[0] - a[0]) * t) // cell),
                            int((a[1] + (b[1] - a[1]) * t) // cell)))
-    return len(cells) * cell * cell / area
+    return cells
 
 
 def hatch_mask(sheet, style_index, selection, zonemap, cell_factor: float = 6.0) -> HatchMask:
     """Harled ritningens maskade zoner ur dess egen schraffering.
 
+    En schrafferad yta i planet betyder normalt att omradet ligger utanfor det
+    ritningen redovisar - annan entreprenad, annan etapp, eller en angransande
+    ritning. Ledningar ritas ofta igenom zonen for att visa anslutningen, men
+    de ingar inte i mangden.
+
     Tre villkor, alla relativa till ritningen sjalv (R1):
 
-    1. Banorna mots inte - en schraffering ar parallella streck, inte ett nat.
-    2. Langden ligger i hogst tva riktningar. Text och symboler sprider sig
-       over manga; en schraffering gor det aldrig.
-    3. Linjerna ligger REGELBUNDET - samma delning om och om igen. Ett
-       vaggunderlag har ocksa en huvudriktning, men rummen ar olika stora sa
-       avstanden varierar.
-    4. Ytan ar FYLLD, matt som andel av klustrets egen bbox, och fylld
-       tatare an ritningens ovriga riktade geometri.
-
-    ``cell_factor`` anvands bara nar linjedelningen inte gar att mata.
+    1. REGELBUNDNA parallella grannar. Det ar definitionen av en
+       schraffering, och den haller oavsett om monstret ligger som ett block
+       eller som en ram runt planet.
+    2. FIN delning - hogst en hundradel av arkets diagonal. En schraffering ar
+       en ritteknisk fyllning; ett modulnat eller en rumsindelning har
+       delningar i byggnadsmatt och faller bort har.
+    3. STOR plantackning, som utstickare. Ett dorrslag och en trappa ar ocksa
+       regelbundna och finmaskiga, men de tacker en brakdel av planet.
+       Schrafferingen tacker 10-26 %, ovriga kandidater under 1 %.
     """
     pipe_ids = set(selection.pipe_clusters)
     by_id = {p.id: p for p in sheet.paths}
-    fallback_cell = max(sheet.median_width() * cell_factor, 1e-6)
     disqualified = {"text_or_glyph", "frame", "degenerate"}
+    max_pitch = sheet.transform.diagonal * 0.01
+    plan = zonemap.plan
+    plan_area = max((plan[2] - plan[0]) * (plan[3] - plan[1]), 1e-9)
 
     candidates = []
     for c in style_index.clusters:
         if c.id in pipe_ids or c.n_paths < MIN_HATCH_PATHS or c.total_length <= 0:
             continue
-        if c.connectivity >= 0.10:
-            continue
         if zonemap.classify(c.bbox) != "plan":
             continue
         if selection.reasons.get(c.id) in disqualified:
             continue
-        if _top_k_share(c, 2) < 0.90:
+        pitch, regular = _parallel_pitch(c, by_id)
+        if pitch <= 0 or pitch > max_pitch or regular < MIN_HATCH_REGULARITY:
             continue
-        pitch, _regularity = _hatch_pitch(c, by_id)
-        candidates.append((c, _fill_ratio(c, by_id, fallback_cell), pitch))
+        cells = _covered_cells(c, by_id, max(pitch, 1e-6))
+        coverage = len(cells) * pitch * pitch / plan_area
+        candidates.append((c, pitch, coverage))
 
     if not candidates:
         return HatchMask([], [])
 
-    # Schrafferingen ar den mest YTFYLLANDE riktade geometrin pa arket. Att
-    # jamfora mot medianen av en handfull kandidater ar sprott - medianen
-    # flyttar sig sa fort en kandidat tillkommer eller faller bort. Att i
-    # stallet ta utstickaren, och det som ligger tatt intill den, ar stabilt
-    # och sager samma sak: hatchen fyller sin yta, konturer gor det inte.
-    max_fill = max(f for _, f, _p in candidates)
-    cutoff = max_fill * 0.8
+    # Schrafferingen ar utstickaren i plantackning. Att jamfora mot en median
+    # ar sprott nar kandidaterna ar fa; utstickaren ar stabil.
+    top = max(cov for _, _, cov in candidates)
+    cutoff = top * 0.5
 
     chosen: list[str] = []
     regions: list[tuple[float, set[tuple[int, int]]]] = []
-    for c, fill, pitch in candidates:
-        if fill < cutoff:
+    for c, pitch, coverage in candidates:
+        if coverage < cutoff:
             continue
         chosen.append(c.id)
         # Finmaskigt rutnat for skarp zonkant, och en slutning som ar exakt
         # sa bred som schrafferingens egen delning. Da sluts ytan MELLAN
         # linjerna - dar ett ror annars loper omaskerat - utan att zonen
         # svaller ut over sin verkliga kant.
-        cell = fallback_cell
-        radius = max(1, math.ceil((pitch or cell) / cell / 2))
-        seed: set[tuple[int, int]] = set()
-        for pid in c.path_ids:
-            for a, b in by_id[pid].segments:
-                n = max(1, int(math.dist(a, b) / cell))
-                for k in range(n + 1):
-                    t = k / n
-                    seed.add((int((a[0] + (b[0] - a[0]) * t) // cell),
-                              int((a[1] + (b[1] - a[1]) * t) // cell)))
+        cell = max(sheet.median_width() * cell_factor, 1e-6)
+        radius = max(1, math.ceil(pitch / cell / 2))
+        seed = _covered_cells(c, by_id, cell)
         cells = {
             (x + dx, y + dy)
             for (x, y) in seed

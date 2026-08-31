@@ -79,17 +79,35 @@ class LayerRule:
 
 
 def project_key(layers: list[str]) -> str | None:
-    """Projektnyckeln: den vanligaste delen fore '|' i lagernamnen.
+    """Projektets identitet, harledd ur lagernamnen.
 
-    CAD-lager fran en extern referens bar normalt ritningens eller modellens
-    beteckning som prefix. Den identifierar projektet utan att saga nagot om
-    vilket lager som ar ror.
+    CAD-lager fran en extern referens bar modellens beteckning som prefix,
+    och modellbeteckningen inleds med PROJEKTNUMRET:
+
+        268140-W-50-P-A-00|V-53BB-FE--S3-     VVS-modellen
+        268140-A-40-P-A-01|A-------EXN        arkitektmodellen
+
+    En och samma ritning kan bara pa flera modeller samtidigt, och samma
+    projekt anvander flera modellfiler. Nyckeln ar darfor projektnumret -
+    det forsta faltet i det prefix som bar flest lager - inte hela
+    modellbeteckningen. Att anvanda modellbeteckningen skulle gora varje
+    modellfil till ett eget "projekt" och tvinga fram en ny kalibrering for
+    ritningar som foljer exakt samma konvention.
+
+    R2 galler oforandrat: profilen far ateranvandas inom samma projekt,
+    aldrig mellan projekt.
     """
-    prefixes = [l.split("|", 1)[0] for l in layers if "|" in l]
-    if not prefixes:
+    per_prefix: collections.Counter = collections.Counter()
+    for layer in layers:
+        if "|" in layer:
+            per_prefix[layer.split("|", 1)[0]] += 1
+    if not per_prefix:
         return None
-    key, n = collections.Counter(prefixes).most_common(1)[0]
-    return key if n >= 2 else None
+    dominant, n = per_prefix.most_common(1)[0]
+    if n < 2:
+        return None
+    lead = dominant.split("-", 1)[0].strip()
+    return lead or dominant
 
 
 def induce(positives: list[str], negatives: list[str], max_fields: int = 3) -> list[str]:

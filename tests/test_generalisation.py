@@ -16,7 +16,14 @@ HELD_OUT = {
     "data/W501A0013-single.pdf": (112.9, 24),
     "data/W501A0023-single.pdf": (36.4, 9),
     "data/W501A0014-single.pdf": (50.9, 16),
+    "data/W501A0111-single.pdf": (519.5, 90),
 }
+
+# Vertikalrakningen halller annu inte pa 0111. Ritningen ar en vaningsplan med
+# radiatorer och betydligt fler kvadratiska symboler pa rorlagren an de fyra
+# bottenplattsritningarna; symbolurvalet skiljer inte stigarsymbolen fran
+# ovriga. Kant fel, redovisat som xfail i stallet for att tystas.
+VERTICALS_KNOWN_BAD = {"data/W501A0111-single.pdf"}
 
 needs_set = pytest.mark.skipif(
     not all(os.path.exists(p) for p in [CAL, CAL_MARKED, *HELD_OUT]),
@@ -62,9 +69,13 @@ def test_held_out_drawing_within_ten_percent(rule, pdf, facit):
 
 @needs_set
 @pytest.mark.parametrize("pdf,facit", sorted((k, v[1]) for k, v in HELD_OUT.items()))
-def test_held_out_vertical_count_within_ten(rule, pdf, facit):
+def test_held_out_vertical_count_within_ten(request, rule, pdf, facit):
     from takeoff import pipeline
 
+    if pdf in VERTICALS_KNOWN_BAD:
+        request.node.add_marker(
+            pytest.mark.xfail(reason="symbolurvalet skiljer inte stigare fran ovriga symboler", strict=True)
+        )
     result = pipeline.run(pdf, layer_rule=rule)
     n = len(result.net.verticals)
     assert abs(n - facit) <= 10, f"{pdf}: {n} vertikala mot facit {facit}"
