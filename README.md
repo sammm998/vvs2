@@ -6,47 +6,62 @@ gäller före allt annat i detta repo; fasplanen ligger i `docs/FASER.md`.
 
 ## Status
 
-Kalibrerad pa **W-50-1-A-0011**. Verifierad pa **0013** och **0023**, som bada
-ar HALLNA UTE fran kalibreringen och inte har paverkat en enda parameter.
+Kalibrerad pa **W-50-1-A-0011**. Verifierad pa **0013**, **0014** och **0023**,
+som alla ar HALLNA UTE fran kalibreringen och inte har paverkat en parameter.
 
-| ritning | matt | facit | fel | MAPE/system | roll |
-|---|---|---|---|---|---|
-| 0011 | 222,9 m | 213,7 m | **+4,3 %** | 13,8 % | kalibrering |
-| 0013 | 117,8 m | 112,9 m | **+2,6 %** | 1,3 % | hallen ute |
-| 0023 | 38,2 m | 36,4 m | **+5,0 %** | 4,8 % | hallen ute |
+| ritning | matt | facit | fel | MAPE/system | vertikala | roll |
+|---|---|---|---|---|---|---|
+| 0011 | 210,1 m | 213,7 m | **-1,7 %** | 2,3 % | 60 / 55 | kalibrering |
+| 0013 | 110,3 m | 112,9 m | **-2,3 %** | 1,3 % | 24 / 24 | hallen ute |
+| 0014 | 48,3 m | 50,9 m | **-5,0 %** | 4,4 % | 20 / 16 | hallen ute |
+| 0023 | 35,6 m | 36,4 m | **-2,3 %** | 2,5 % | 13 / 9 | hallen ute |
 
-Skalan verifieras geometriskt till 1:50 pa alla tre, med 0,03 % avvikelse
-mellan kallorna. Tackningen (R6) ar 1,0000 pa alla tre.
+Medelavvikelse 2,8 %. Alla fyra passerar bade langdgrinden (+/-10 %),
+MAPE-grinden (<10 %) och vertikalgrinden (+/-10). Skalan verifieras
+geometriskt till 1:50 pa alla fyra med 0,03 % avvikelse mellan kallorna, och
+tackningen (R6) ar 1,0000.
 
-Recall mot facitgeometrin ar 98-99 % pa alla tre: motorn hittar praktiskt
-taget varje meter kalkylatorn matt. Overskottet ar geometri som facit inte
-tacker, inte missad geometri.
+Recall mot facitgeometrin ar 98-99 %: motorn hittar praktiskt taget varje
+meter kalkylatorn matt.
 
 ## Kan den nya ritningar?
 
 Ja, inom samma projekt - och det ar en precis avgransning, inte en brasklapp.
 
 **Inom ett kalibrerat projekt** kors en ny ritning utan handpaslag. Bade
-lagerregeln och skalreferensen kommer ur projektprofilen. Det ar sa 0013 och
-0023 kordes.
+lagerregeln och skalreferensen kommer ur projektprofilen. Sa kordes 0013,
+0014 och 0023.
 
 **I ett nytt projekt** behovs EN handmatt ritning. `takeoff calibrate`
-inducerar da lagerregeln ur facitets geometri och skalstockens spann ur den
+inducerar lagerregeln ur facitets geometri och skalstockens spann ur den
 verifierade skalan. Det ar samma arbetsgang CLAUDE.md avslutar med, och skalet
 ar att lagerkonventioner varierar mellan projekterande foretag (R2).
 
 **Utan kalibrering** faller motorn tillbaka pa ett strukturellt urval
-(linjebredd over ritningens median plus kopplingsgrad). Det urvalet ar
-markerat `pipe_style:structural` och ar matbart samre: pa 0013 missade det
-tre av sex rorsystem och slappte igenom tva arkitektlager. Lita inte pa det
-utan granskning.
+(linjebredd over ritningens median plus kopplingsgrad). Det urvalet ar markt
+`pipe_style:structural` och ar matbart samre: pa 0013 missade det tre av sex
+rorsystem och slappte igenom tva arkitektlager. Lita inte pa det utan
+granskning.
 
 **Nar underlaget inte racker vagrar motorn.** 0023 saknar modulnat som riktig
 text; innan skalreferensen fanns stannade korningen med
-`ambiguous:1:50,1:100,1:200` i stallet for att valja en skala. En gissad
-skala multiplicerar hela mangdforteckningen med fel tal, sa det ar ratt
-beteende - men det betyder ocksa att en ny ritning kan krava kalibrering
-innan den gar att mata.
+`ambiguous:1:50,1:100,1:200` i stallet for att valja en skala. En gissad skala
+multiplicerar hela mangdforteckningen med fel tal.
+
+## Maskade zoner
+
+Ritningarna redovisar geometri som ligger utanfor det som mangdas: rorstrackor
+genom schrafferade omraden vid entreprenadgransen, ritade for att visa
+anslutningen. Pa 0014 var det 39,9 m av 88,2 - nastan halva matningen.
+
+Zonen harleds ur ritningens egen schraffering: ett kluster av parallella,
+osammanhangande linjer i hogst tva riktningar, som FYLLER sin yta tatare an
+all annan riktad geometri pa arket. Slutningen ar exakt sa bred som
+schrafferingens egen linjedelning, sa att ytan mellan strecken sluts utan att
+zonen svaller ut over sin kant.
+
+Bade langden och antalet vertikala ror i zonen redovisas som egna varden. De
+tas aldrig bort tyst (R10).
 
 ## Vad probet visade (fas 0)
 

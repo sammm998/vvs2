@@ -11,9 +11,11 @@ import pytest
 
 CAL = "data/W501A0011-single.pdf"
 CAL_MARKED = "data/W501A0011-bundle.pdf"
+# ritning -> (facit langd i meter, facit antal vertikala ror)
 HELD_OUT = {
-    "data/W501A0013-single.pdf": 112.9,
-    "data/W501A0023-single.pdf": 36.4,
+    "data/W501A0013-single.pdf": (112.9, 24),
+    "data/W501A0023-single.pdf": (36.4, 9),
+    "data/W501A0014-single.pdf": (50.9, 16),
 }
 
 needs_set = pytest.mark.skipif(
@@ -47,7 +49,7 @@ def test_rule_is_never_reused_across_projects(rule):
 
 
 @needs_set
-@pytest.mark.parametrize("pdf,facit", sorted(HELD_OUT.items()))
+@pytest.mark.parametrize("pdf,facit", sorted((k, v[0]) for k, v in HELD_OUT.items()))
 def test_held_out_drawing_within_ten_percent(rule, pdf, facit):
     from takeoff import pipeline
 
@@ -56,6 +58,27 @@ def test_held_out_drawing_within_ten_percent(rule, pdf, facit):
     assert result.scale.value == 50.0
     err = (result.total_length_m - facit) / facit * 100
     assert abs(err) <= 10.0, f"{pdf}: {result.total_length_m:.1f} m mot facit {facit} ({err:+.1f}%)"
+
+
+@needs_set
+@pytest.mark.parametrize("pdf,facit", sorted((k, v[1]) for k, v in HELD_OUT.items()))
+def test_held_out_vertical_count_within_ten(rule, pdf, facit):
+    from takeoff import pipeline
+
+    result = pipeline.run(pdf, layer_rule=rule)
+    n = len(result.net.verticals)
+    assert abs(n - facit) <= 10, f"{pdf}: {n} vertikala mot facit {facit}"
+
+
+@needs_set
+@pytest.mark.parametrize("pdf", sorted(HELD_OUT))
+def test_masked_zone_is_reported_not_discarded(rule, pdf):
+    """Det som maskas bort maste ga att se - annars ar det tyst filtrering."""
+    from takeoff import pipeline
+
+    result = pipeline.run(pdf, layer_rule=rule)
+    if result.masked_length_m > 0:
+        assert any(f.startswith("masked_zone:") for f in result.flags)
 
 
 @needs_set

@@ -56,6 +56,7 @@ class Network:
     verticals: list[Vertical]
     bends: int = 0
     tees: int = 0
+    masked_verticals: list[Vertical] = field(default_factory=list)
 
     @property
     def total_length(self) -> float:

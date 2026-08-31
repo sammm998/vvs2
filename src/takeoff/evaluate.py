@@ -51,7 +51,8 @@ class Evaluation:
         _line("i facitomfang", f"{m['in_scope_length_m']:.1f} m ({m['in_scope_error_pct']:+.1f}%)",
               ok=abs(m["in_scope_error_pct"]) <= 10)
         _line("utanfor facitomfang", f"{m['out_of_scope_length_m']:.1f} m ({m['out_of_scope_note']})")
-        _line("i maskad zon (ej mangd)", f"{m['masked_length_m']:.1f} m")
+        _line("i maskad zon (ej mangd)", f"{m['masked_length_m']:.1f} m, "
+                                          f"{m['masked_verticals']} vertikala")
         _line("vertikala ror", f"{m['n_verticals']} mot facit {f['total_verticals']:.0f} "
                                f"({m['vertical_error']:+.0f})", ok=abs(m["vertical_error"]) <= 10)
         _line("noder < 3x beteckningar", f"{m['n_nodes']} vs {3 * f['n_labels']}",
@@ -110,6 +111,7 @@ def evaluate(
         "n_verticals": len(r.net.verticals),
         "total_length_m": r.total_length_m,
         "masked_length_m": r.masked_length_m,
+        "masked_verticals": r.masked_verticals,
         "method": r.selection.method,
         "flags": r.flags + r.selection.flags + r.scale.flags,
         "facit": None,

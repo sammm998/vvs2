@@ -21,6 +21,10 @@ from .extract import Sheet
 
 Box = tuple[float, float, float, float]
 
+# En ytschraffering ar per definition en FAMILJ av manga linjer. Ett tjugotal
+# parallella vaggkonturer ar inte en schrafferad yta. Antal, inte matt (R1).
+MIN_HATCH_PATHS = 60
+
 
 @dataclass
 class Zone:
@@ -250,54 +254,176 @@ class HatchMask:
     eller en angransande ritning. Ledningar ritas ofta igenom zonen for att
     visa anslutningen, men de ingar inte i mangden.
 
-    Zonen harleds ur ritningens egen geometri: ett kluster av langa,
-    parallella, osammanhangande linjer. Inga fasta koordinater (CLAUDE.md,
-    avsnitt Forbjudet).
+    Zonen harleds ur ritningens egen geometri. Rutnatets cell ar
+    schrafferingens EGEN linjedelning: da hamnar tva grannlinjer i
+    angransande celler och ytan mellan dem sluts, i stallet for att lamna
+    springor dar ett ror kan lopa omaskerat. Delningen mats per kluster - en
+    grov och en fin schraffering pa samma ritning far var sin cell.
 
     Langden i zonen tas ALDRIG bort tyst - den redovisas som egen rad (R10).
     """
 
-    def __init__(self, cells: set[tuple[int, int]], cell: float, clusters: list[str]):
-        self.cells = cells
-        self.cell = cell
+    def __init__(self, regions: list[tuple[float, set[tuple[int, int]]]], clusters: list[str]):
+        self.regions = regions
         self.clusters = clusters
 
     def __bool__(self) -> bool:
-        return bool(self.cells)
+        return any(cells for _, cells in self.regions)
+
+    @property
+    def cell(self) -> float:
+        return self.regions[0][0] if self.regions else 0.0
+
+    @property
+    def cells(self) -> set[tuple[int, int]]:
+        out: set[tuple[int, int]] = set()
+        for _, c in self.regions:
+            out |= c
+        return out
 
     def contains(self, point) -> bool:
-        if not self.cells:
-            return False
-        return (int(point[0] // self.cell), int(point[1] // self.cell)) in self.cells
+        for cell, cells in self.regions:
+            if cells and (int(point[0] // cell), int(point[1] // cell)) in cells:
+                return True
+        return False
 
     def as_dict(self) -> dict:
-        return {"cells": len(self.cells), "cell_pt": round(self.cell, 2), "clusters": self.clusters}
+        return {
+            "clusters": self.clusters,
+            "regions": [
+                {"cell_pt": round(c, 2), "cells": len(cs)} for c, cs in self.regions
+            ],
+        }
+
+
+def _hatch_pitch(cluster, by_id) -> tuple[float, float]:
+    """Schrafferingens linjedelning och hur REGELBUNDEN den ar.
+
+    Mats vinkelratt mot klustrets dominerande riktning. Returnerar
+    (delning, andel grannavstand som delar den delningen).
+
+    Regelbundenheten ar det som definierar en schraffering. Ett
+    vaggunderlag har ocksa parallella linjer i en huvudriktning, men deras
+    avstand ar godtyckliga: rummen ar olika stora. Pa 0011 delar 61 % av
+    schrafferingens grannavstand samma delning, mot 6 % for underlaget.
+    """
+    segs = []
+    for pid in cluster.path_ids:
+        for a, b in by_id[pid].segments:
+            if math.dist(a, b) > 0:
+                segs.append((a, math.atan2(b[1] - a[1], b[0] - a[0]) % math.pi))
+    if not segs:
+        return (0.0, 0.0)
+    dominant = collections.Counter(round(ang, 2) for _, ang in segs).most_common(1)[0][0]
+    nx, ny = -math.sin(dominant), math.cos(dominant)
+    proj = sorted({round(a[0] * nx + a[1] * ny, 1) for a, ang in segs if abs(ang - dominant) < 0.03})
+    gaps = [round(proj[i + 1] - proj[i], 1) for i in range(len(proj) - 1)]
+    gaps = [g for g in gaps if g > 0]
+    if not gaps:
+        return (0.0, 0.0)
+    pitch, n = collections.Counter(gaps).most_common(1)[0]
+    return (pitch, n / len(gaps))
+
+
+def _top_k_share(cluster, k: int) -> float:
+    """Andel av langden i klustrets k starkaste riktningar."""
+    v = sorted(cluster.angle_histogram.values(), reverse=True)
+    return sum(v[:k])
+
+
+def _fill_ratio(cluster, by_id, cell: float) -> float:
+    """Hur stor del av klustrets egen bbox som dess linjer passerar igenom.
+
+    Ytschraffering FYLLER sin ruta; ett vaggunderlag ritar bara konturer i
+    den. Det ar den skillnaden som skiljer en maskad zon fran byggnaden.
+    """
+    x0, y0, x1, y1 = cluster.bbox
+    area = (x1 - x0) * (y1 - y0)
+    if area <= 0 or cell <= 0:
+        return 0.0
+    cells: set[tuple[int, int]] = set()
+    for pid in cluster.path_ids:
+        for a, b in by_id[pid].segments:
+            n = max(1, int(math.dist(a, b) / cell))
+            for k in range(n + 1):
+                t = k / n
+                cells.add((int((a[0] + (b[0] - a[0]) * t) // cell),
+                           int((a[1] + (b[1] - a[1]) * t) // cell)))
+    return len(cells) * cell * cell / area
 
 
 def hatch_mask(sheet, style_index, selection, zonemap, cell_factor: float = 6.0) -> HatchMask:
-    from .styles import angular_concentration
+    """Harled ritningens maskade zoner ur dess egen schraffering.
 
+    Tre villkor, alla relativa till ritningen sjalv (R1):
+
+    1. Banorna mots inte - en schraffering ar parallella streck, inte ett nat.
+    2. Langden ligger i hogst tva riktningar. Text och symboler sprider sig
+       over manga; en schraffering gor det aldrig.
+    3. Linjerna ligger REGELBUNDET - samma delning om och om igen. Ett
+       vaggunderlag har ocksa en huvudriktning, men rummen ar olika stora sa
+       avstanden varierar.
+    4. Ytan ar FYLLD, matt som andel av klustrets egen bbox, och fylld
+       tatare an ritningens ovriga riktade geometri.
+
+    ``cell_factor`` anvands bara nar linjedelningen inte gar att mata.
+    """
     pipe_ids = set(selection.pipe_clusters)
     by_id = {p.id: p for p in sheet.paths}
-    cell = max(sheet.median_width() * cell_factor, 1e-6)
-    chosen: list[str] = []
-    cells: set[tuple[int, int]] = set()
+    fallback_cell = max(sheet.median_width() * cell_factor, 1e-6)
+    disqualified = {"text_or_glyph", "frame", "degenerate"}
+
+    candidates = []
     for c in style_index.clusters:
-        if c.id in pipe_ids or c.n_paths < 20 or c.total_length <= 0:
+        if c.id in pipe_ids or c.n_paths < MIN_HATCH_PATHS or c.total_length <= 0:
             continue
-        # Schraffering: enriktad, langa banor, och banorna mots inte - de ar
-        # parallella streck, inte ett nat.
-        if angular_concentration(c) <= 0.8 or c.connectivity >= 0.10:
+        if c.connectivity >= 0.10:
             continue
         if zonemap.classify(c.bbox) != "plan":
             continue
+        if selection.reasons.get(c.id) in disqualified:
+            continue
+        if _top_k_share(c, 2) < 0.90:
+            continue
+        pitch, _regularity = _hatch_pitch(c, by_id)
+        candidates.append((c, _fill_ratio(c, by_id, fallback_cell), pitch))
+
+    if not candidates:
+        return HatchMask([], [])
+
+    # Schrafferingen ar den mest YTFYLLANDE riktade geometrin pa arket. Att
+    # jamfora mot medianen av en handfull kandidater ar sprott - medianen
+    # flyttar sig sa fort en kandidat tillkommer eller faller bort. Att i
+    # stallet ta utstickaren, och det som ligger tatt intill den, ar stabilt
+    # och sager samma sak: hatchen fyller sin yta, konturer gor det inte.
+    max_fill = max(f for _, f, _p in candidates)
+    cutoff = max_fill * 0.8
+
+    chosen: list[str] = []
+    regions: list[tuple[float, set[tuple[int, int]]]] = []
+    for c, fill, pitch in candidates:
+        if fill < cutoff:
+            continue
         chosen.append(c.id)
+        # Finmaskigt rutnat for skarp zonkant, och en slutning som ar exakt
+        # sa bred som schrafferingens egen delning. Da sluts ytan MELLAN
+        # linjerna - dar ett ror annars loper omaskerat - utan att zonen
+        # svaller ut over sin verkliga kant.
+        cell = fallback_cell
+        radius = max(1, math.ceil((pitch or cell) / cell / 2))
+        seed: set[tuple[int, int]] = set()
         for pid in c.path_ids:
             for a, b in by_id[pid].segments:
                 n = max(1, int(math.dist(a, b) / cell))
                 for k in range(n + 1):
                     t = k / n
-                    px = a[0] + (b[0] - a[0]) * t
-                    py = a[1] + (b[1] - a[1]) * t
-                    cells.add((int(px // cell), int(py // cell)))
-    return HatchMask(cells, cell, chosen)
+                    seed.add((int((a[0] + (b[0] - a[0]) * t) // cell),
+                              int((a[1] + (b[1] - a[1]) * t) // cell)))
+        cells = {
+            (x + dx, y + dy)
+            for (x, y) in seed
+            for dx in range(-radius, radius + 1)
+            for dy in range(-radius, radius + 1)
+        }
+        regions.append((cell, cells))
+    return HatchMask(regions, chosen)

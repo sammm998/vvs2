@@ -26,6 +26,7 @@ class SystemQuantity:
     masked_length_m: float
     strands: int
     verticals: int
+    masked_verticals: int
     bends: int
     flags: list[str] = field(default_factory=list)
 
@@ -48,6 +49,11 @@ class RunResult:
     @property
     def total_length_m(self) -> float:
         return sum(q.length_m for q in self.quantities)
+
+    @property
+    def masked_verticals(self) -> int:
+        """Vertikala ror i maskad zon. Redovisas, ingar inte i antalet (R10)."""
+        return sum(q.masked_verticals for q in self.quantities)
 
     @property
     def masked_length_m(self) -> float:
@@ -83,6 +89,7 @@ class RunResult:
                     "masked_length_m": round(q.masked_length_m, 1),
                     "strands": q.strands,
                     "verticals": q.verticals,
+                    "masked_verticals": q.masked_verticals,
                     "bends": q.bends,
                 }
                 for q in sorted(self.quantities, key=lambda q: -q.length_m)
@@ -154,6 +161,11 @@ def run(
     ]
     cluster_of_layer = {style_index.get(c).key.layer: c for c in selection.pipe_clusters}
     network.find_verticals(net, cand, cluster_of_layer, unit)
+    # Samma omfangsregel som for langden: en stigarsymbol i en maskad zon
+    # hor till det omrade ritningen undantar och raknas darfor inte in.
+    # Att mata langden med en regel och antalet med en annan vore ohallbart.
+    net.masked_verticals = [v for v in net.verticals if mask.contains(v.center)]
+    net.verticals = [v for v in net.verticals if not mask.contains(v.center)]
 
     quantities = _quantify(sc, style_index, selection, chains, net, mask)
     return RunResult(
@@ -193,6 +205,7 @@ def _quantify(sc, style_index, selection, chains, net, mask=None) -> list[System
         c = style_index.get(cid)
         strands = [s for s in net.strands if s.cluster_id == cid]
         verts = [v for v in net.verticals if v.cluster_id == cid]
+        masked_verts = [v for v in net.masked_verticals if v.cluster_id == cid]
         cr = chains[cid]
         f = []
         if cr.plateau_width <= 0:
@@ -213,6 +226,7 @@ def _quantify(sc, style_index, selection, chains, net, mask=None) -> list[System
                 masked_length_m=sc.to_m(inside_pt),
                 strands=len(strands),
                 verticals=len(verts),
+                masked_verticals=len(masked_verts),
                 bends=max(0, len(strands) - 1),
                 flags=f,
             )
