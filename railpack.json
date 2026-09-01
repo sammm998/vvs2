@@ -2,6 +2,6 @@
   "$schema": "https://schema.railpack.com",
   "provider": "python",
   "deploy": {
-    "startCommand": "uvicorn --app-dir src takeoff.web:app --host 0.0.0.0 --port ${PORT:-8000}"
+    "startCommand": "python main.py"
   }
 }
