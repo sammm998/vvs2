@@ -24,6 +24,8 @@ import os
 import re
 from dataclasses import dataclass, field
 
+from . import paths
+
 
 @dataclass
 class LayerRule:
@@ -263,7 +265,7 @@ def calibrate(result, geometry: list[dict], tol_units: float = 2.0) -> LayerRule
 # --------------------------------------------------------------------------
 # Lagring. Regeln hor till PROJEKTET, inte till den enskilda ritningen.
 
-PROJECT_DIR = "profiles/_projects"
+PROJECT_DIR = paths.resolve("profiles/_projects", env="TAKEOFF_PROJECT_DIR")
 
 
 def _slug(key: str) -> str:

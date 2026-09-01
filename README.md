@@ -133,6 +133,41 @@ pytest
 
 `data/` och `out/` är gitignorerade. `profiles/` versioneras.
 
+## Drift
+
+Tjansten ar ett skal runt samma motor som `takeoff deliver` kor. Den lagger inte
+till nagon matning och tar inte bort nagon flagga.
+
+```bash
+pip install -e .
+python main.py                 # lokalt, http://localhost:8000
+```
+
+I drift startas den av `railpack.json` eller `Procfile`:
+
+```
+uvicorn --app-dir src takeoff.web:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+`--app-dir src` gor att tjansten startar aven nar byggaren bara installerat
+beroendena och inte sjalva paketet.
+
+| vag | vad den gor |
+|---|---|
+| `GET /` | uppladdningsformular |
+| `POST /mata` | mater ritningen, visar resultatet med alla flaggor |
+| `GET /hamta/<jobb>/<fil>` | Excel eller overlay |
+| `GET /health` | status och vilka projekt instansen ar kalibrerad for |
+
+**Filsystemet ar flyktigt.** Projektprofilerna i `profiles/` foljer med i
+avbilden, sa instansen ar kalibrerad for projekt 268140 direkt vid start. En ny
+kalibrering som gors i drift lever bara sa lange instansen gor det - den maste
+committas for att overleva en omstart. `TAKEOFF_PROJECT_DIR` kan peka om
+katalogen till en beständig volym.
+
+Uppladdade filer och resultat ligger i processens temporarkatalog och forsvinner
+med instansen. Granska overlayen medan resultatsidan ar oppen.
+
 ## Facitfilens kolumner
 
 Facit är en Bluebeam-markeringsexport. Den upplösta mappningen skrivs ut vid

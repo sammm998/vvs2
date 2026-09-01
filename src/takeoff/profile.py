@@ -11,7 +11,9 @@ import json
 import os
 from typing import Any
 
-PROFILE_DIR = "profiles"
+from . import paths
+
+PROFILE_DIR = paths.resolve("profiles", env="TAKEOFF_PROFILE_DIR")
 
 
 def derive(result) -> dict[str, Any]:
