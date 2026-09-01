@@ -95,18 +95,37 @@ class TextIndex:
 
 
 def cap_height(paths: list[PathRecord]) -> float:
-    """Textens versalhojd, som typvardet bland de hogsta glyfstrecken.
+    """Textens versalhojd, matt pa TECKEN - inte pa enskilda streck.
+
+    Ett streck i en glyf ar bara en del av tecknet: en '4' bestar av tre
+    korta streck vars hojder sager ingenting om textstorleken. Hojden maste
+    darfor matas efter att strecken satts ihop till tecken.
+
+    Det gors i tva svep. Forst en grov hopslagning med strecken egna
+    medianhojd som avstand - tillrackligt for att fa ihop tecken, aven om
+    nagra ord ocksa slas ihop. Typvardet bland de gruppernas hojder ar
+    versalhojden, och den styr sedan den riktiga klustringen.
 
     Referensmatt for alla avstand i modulen. Harleds ur ritningen (R1).
     """
-    heights = [round(p.bbox[3] - p.bbox[1], 1) for p in paths if p.length > 0]
-    heights = [h for h in heights if h > 0]
+    live = [p for p in paths if p.length > 0]
+    if not live:
+        return 0.0
+    stroke_h = sorted(p.bbox[3] - p.bbox[1] for p in live)
+    seed = stroke_h[len(stroke_h) // 2] or 0.0
+    if seed <= 0:
+        seed = statistics.fmean(h for h in stroke_h if h > 0) if any(stroke_h) else 1.0
+
+    groups = _cluster_boxes([p.bbox for p in live], gap_x=seed, gap_y=seed)
+    heights = []
+    for idxs in groups:
+        boxes = [live[i].bbox for i in idxs]
+        h = max(b[3] for b in boxes) - min(b[1] for b in boxes)
+        if h > 0:
+            heights.append(round(h, 1))
     if not heights:
         return 0.0
-    top = sorted(heights)[int(len(heights) * 0.75) :]
-    if not top:
-        return max(heights)
-    return collections.Counter(top).most_common(1)[0][0]
+    return collections.Counter(heights).most_common(1)[0][0]
 
 
 def _cluster_boxes(items, gap_x: float, gap_y: float) -> list[list]:

@@ -1,5 +1,12 @@
 """Kommandoradsgranssnitt.
 
+Normal arbetsgang:
+
+    takeoff calibrate <pdf>            EN handmatt ritning per projekt (R2)
+    takeoff deliver   <pdf>            Mangdforteckning + overlay + profil
+
+Ovriga kommandon:
+
     takeoff triage    <pdf>            Spar A/B/C + inventering
     takeoff profile   <pdf>            Harled och spara projektprofil
     takeoff run       <pdf>            Hela kedjan -> resultat i SQLite
@@ -17,7 +24,7 @@ import os
 
 import typer
 
-from . import db, evaluate as ev, extract, groundtruth, layergrammar as lg, overlay as ov, pipeline, profile as prof
+from . import db, evaluate as ev, extract, groundtruth, layergrammar as lg, overlay as ov, pipeline, profile as prof, quantify as qt
 from . import styles as st
 from . import zones as zn
 
@@ -106,6 +113,40 @@ def overlay(pdf: str, out: str = "") -> None:
     result = pipeline.run(pdf)
     target = out or f"out/overlay_{result.drawing}.pdf"
     print("skrev", ov.render(result, target))
+
+
+@app.command()
+def deliver(pdf: str, outdir: str = "out") -> None:
+    """Hela leveransen for en ritning: mangdforteckning, overlay och profil.
+
+    Excel med tre blad, verifierings-PDF att granska mot, och den harledda
+    projektprofilen. Det ar detta en kalkylator tar emot.
+    """
+    result = pipeline.run(pdf)
+    xlsx = qt.export_excel(result, os.path.join(outdir, f"mangd_{result.drawing}.xlsx"))
+    pdf_out = ov.render(result, os.path.join(outdir, f"overlay_{result.drawing}.pdf"))
+    profile_path = prof.save(prof.derive(result))
+
+    print(f"\n{'=' * 66}")
+    print(f"{result.drawing}   spar {result.triage.track}   "
+          f"skala 1:{result.scale.value:.0f} "
+          f"{'verifierad' if result.scale.verified else 'OVERIFIERAD'}")
+    print("=" * 66)
+    for row in qt.build_rows(result):
+        print(f"  {row.length_m:8.1f} m  {row.verticals:4d} vert  {row.kind:<13} {row.label}")
+    print(f"  {'-' * 62}")
+    print(f"  {result.total_length_m:8.1f} m  {len(result.net.verticals):4d} vert  TOTALT I MANGDEN")
+    if result.masked_length_m:
+        print(f"  {result.masked_length_m:8.1f} m  {result.masked_verticals:4d} vert  "
+              f"i maskad zon - redovisas, ingar ej")
+    flags = result.flags + result.selection.flags + result.scale.flags
+    if flags:
+        print("\n  flaggor:")
+        for f in flags:
+            print(f"    - {f}")
+    print(f"\n  skrev {xlsx}")
+    print(f"  skrev {pdf_out}")
+    print(f"  skrev {profile_path}")
 
 
 @app.command("import-facit")
